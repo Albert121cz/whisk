@@ -1,0 +1,6 @@
+lib/*
+include/*
+.vscode/*
+build/*
+*.o
+workspace.code-workspace
