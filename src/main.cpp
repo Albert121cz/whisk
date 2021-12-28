@@ -1,18 +1,15 @@
 #include "main.hpp"
 
+#define GL_MAJOR_VERSION 4
+#define GL_MINOR_VERSION 6
 
-wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
-    EVT_MENU(LOAD, MainFrame::load)
-    EVT_MENU(wxID_ABOUT, MainFrame::about)
-    EVT_MENU(wxID_EXIT, MainFrame::exit)
-wxEND_EVENT_TABLE()
 
 wxIMPLEMENT_APP(App);
 
 bool App::OnInit()
 {
     MainFrame *frame = new MainFrame("Hello World", 
-                                     wxPoint(50, 50), wxSize(450, 340));
+                                     wxPoint(50, 50), wxSize(800, 600));
     frame->Show(true);
 
     if (!frame->opengl_initialized())
@@ -21,9 +18,20 @@ bool App::OnInit()
     return true;
 }
 
+
+wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
+    EVT_MENU(LOAD, MainFrame::load)
+    EVT_MENU(wxID_ABOUT, MainFrame::about)
+    EVT_MENU(wxID_EXIT, MainFrame::exit)
+wxEND_EVENT_TABLE()
+
+
+// The frame style is altered, so that the window cannot be resized, hence no
+// need for handling the size change
 MainFrame::MainFrame(const wxString& title,
                      const wxPoint& pos, const wxSize& size)
-         : wxFrame(NULL, wxID_ANY, title, pos, size)
+         : wxFrame(NULL, wxID_ANY, title, pos, size,
+                wxDEFAULT_FRAME_STYLE & ~(wxRESIZE_BORDER | wxMAXIMIZE_BOX))
 {
     #ifdef DEBUG
         logger_ptr = new wxLogStream(&std::cout);
@@ -85,7 +93,7 @@ void MainFrame::load(wxCommandEvent& event)
                     "OBJ files (*.obj)|*.obj", wxFD_OPEN|wxFD_FILE_MUST_EXIST);
     
     if (loadFileDialog.ShowModal() == wxID_CANCEL)
-    return;
+        return;
 
     wxFileInputStream load_stream(loadFileDialog.GetPath());
     
@@ -104,23 +112,50 @@ void MainFrame::about(wxCommandEvent& event)
 }
 
 
+wxBEGIN_EVENT_TABLE(Canvas, wxGLCanvas)
+    EVT_PAINT(Canvas::paint)
+    // TODO: handle resizing
+    // EVT_SIZE(Canvas::size)
+    // EVT_MOUSE_EVENTS(MyGLCanvas::OnMouse)
+wxEND_EVENT_TABLE()
+
+
 // https://github.com/wxWidgets/wxWidgets/tree/master/samples/opengl/pyramid
 Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
       : wxGLCanvas(parent, canvasAttrs), parent_ptr(parent)
 {
     wxGLContextAttrs ctxAttrs;
-    ctxAttrs.PlatformDefaults().OGLVersion(4, 7).EndList();
+    ctxAttrs.PlatformDefaults().OGLVersion(GL_MAJOR_VERSION,
+                                            GL_MINOR_VERSION).EndList();
     glctx_ptr = new wxGLContext(this, NULL, &ctxAttrs);
 
     if ( !glctx_ptr->IsOK() )
     {
-        wxMessageBox("The graphics driver failed to initialize OpenGL",
+        wxString msg_out;
+        msg_out.Printf("The graphics driver failed to initialize OpenGL v%i.%i",
+                            GL_MAJOR_VERSION, GL_MINOR_VERSION);
+        wxMessageBox(msg_out,
                      "OpenGL initialization error", wxOK | wxICON_ERROR, this);
         delete glctx_ptr;
         glctx_ptr = NULL;
     }
     else
     {
-        wxLogVerbose("OpenGL successfully initialized");
+        wxLogVerbose("OpenGL v%i.%i successfully initialized",
+                        GL_MAJOR_VERSION, GL_MINOR_VERSION);
     }
+}
+
+void Canvas::paint(wxPaintEvent& WXUNUSED(event))
+{
+    wxPaintDC dc(this);
+
+    SetCurrent(*glctx_ptr);
+
+    glViewport(0, 0, 800, 600);
+
+    glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    SwapBuffers();
 }

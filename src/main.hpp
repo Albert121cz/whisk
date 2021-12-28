@@ -44,6 +44,9 @@ class Canvas : public wxGLCanvas
 public:
     Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs);
     bool glctx_exists() {return glctx_ptr != NULL;}
+    
+    void paint(wxPaintEvent& event);
+    // void size(wxSizeEvent& event);
 
 private:
     MainFrame* parent_ptr;
@@ -51,7 +54,8 @@ private:
     // myOGLManager* m_oglManager;
     // int m_winHeight; // We use this var to know if we have been sized
 
-    // wxDECLARE_EVENT_TABLE();
+
+    wxDECLARE_EVENT_TABLE();
 };
 
 enum Event
