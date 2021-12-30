@@ -1,8 +1,5 @@
 #include "main.hpp"
-
-#define GL_MAJOR_VERSION 4
-#define GL_MINOR_VERSION 6
-
+#include "graphics.hpp"
 
 wxIMPLEMENT_APP(App);
 
@@ -125,37 +122,54 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
       : wxGLCanvas(parent, canvasAttrs), parent_ptr(parent)
 {
     wxGLContextAttrs ctxAttrs;
-    ctxAttrs.PlatformDefaults().OGLVersion(GL_MAJOR_VERSION,
-                                            GL_MINOR_VERSION).EndList();
+    ctxAttrs.PlatformDefaults().OGLVersion(OGL_MAJOR_VERSION,
+                                            OGL_MINOR_VERSION).EndList();
     glctx_ptr = new wxGLContext(this, NULL, &ctxAttrs);
 
     if ( !glctx_ptr->IsOK() )
     {
         wxString msg_out;
         msg_out.Printf("The graphics driver failed to initialize OpenGL v%i.%i",
-                            GL_MAJOR_VERSION, GL_MINOR_VERSION);
+                            OGL_MAJOR_VERSION, OGL_MINOR_VERSION);
         wxMessageBox(msg_out,
                      "OpenGL initialization error", wxOK | wxICON_ERROR, this);
         delete glctx_ptr;
         glctx_ptr = NULL;
     }
     else
-    {
         wxLogVerbose("OpenGL v%i.%i successfully initialized",
-                        GL_MAJOR_VERSION, GL_MINOR_VERSION);
+                        OGL_MAJOR_VERSION, OGL_MINOR_VERSION);
+
+    SetCurrent(*glctx_ptr);
+
+    glewExperimental = GL_TRUE;
+    if (glewInit() != GLEW_OK)
+    {
+        wxMessageBox("Glew failed to initialize", "Glew error",
+                                    wxOK | wxICON_ERROR, this);
+        delete glctx_ptr;
+        glctx_ptr = NULL;
     }
+    else
+        wxLogVerbose("Glew successfully initialized");
+
+    graphicsManager = new GraphicsManager(this);
+    // std::unique_ptr<GraphicsManager> graphicsManager = std::make_unique<GraphicsManager>(this);
+
 }
+
+
+std::pair<int, int> getCtxSize()
+{
+// TODO: finish this function so viewport fits in the window without overlapping
+// with the interface
+}
+
 
 void Canvas::paint(wxPaintEvent& WXUNUSED(event))
 {
     wxPaintDC dc(this);
 
-    SetCurrent(*glctx_ptr);
-
-    glViewport(0, 0, 800, 600);
-
-    glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
+    graphicsManager->render();
     SwapBuffers();
 }

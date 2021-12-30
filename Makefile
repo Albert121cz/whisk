@@ -9,28 +9,24 @@ OUTPUT := main.exe
 
 CXXFLAGS += -I./lib/gcc810_x64_dll/mswu -I./include
 LDFLAGS += -L./lib/gcc810_x64_dll
+LDFLAGS += -L./lib/glew
 LDFLAGS += -lwxbase315u_gcc810_x64 -lwxmsw315u_core_gcc810_x64 -lwxmsw315u_gl_gcc810_x64 -lopengl32
+LDFLAGS += -lglew32
 
 SOURCES := $(wildcard ./src/*.cpp)
 OBJS := $(SOURCES:%.cpp=%.o)
 
 DEPS := $(wildcard ./src/*.hpp)
 
-PCHLIST := ./src/include/wxprec.hpp
-GCHLIST := $(PCHLIST:%.hpp=%.hpp.gch)
-
-
 all: $(OUTPUT)
 
 debug: all
-
-headers: $(GCHLIST)
 
 $(OUTPUT): $(OBJS)
 	@echo linking...
 	@$(CXX) -o ./build/$@ $(OBJS) $(LDFLAGS)
 
-.PHONY: all debug clean headers
+.PHONY: all debug clean
 
 %.o: %.cpp $(DEPS)
 	@echo $(CXX) -c $<

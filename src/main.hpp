@@ -1,16 +1,19 @@
 #ifndef MAIN_HPP_
 #define MAIN_HPP_
 
+#include "graphics.hpp"
+
 #ifdef DEBUG
     #include <iostream>
 #endif
 
-#include <wx/wxprec.h>
 #include <wx/wfstream.h>
 #include <wx/glcanvas.h>
-#ifndef WX_PRECOMP
-    #include <wx/wx.h>
-#endif
+#include <wx/wx.h>
+#include <GL/glew.h>
+
+#define OGL_MAJOR_VERSION 4
+#define OGL_MINOR_VERSION 6
 
 class App : public wxApp
 {
@@ -46,14 +49,16 @@ public:
     bool glctx_exists() {return glctx_ptr != NULL;}
     
     void paint(wxPaintEvent& event);
+    std::pair<int, int>getCtxSize();
+    // TODO: make useful error reporting
+    void logError(int err) {wxLogVerbose("%i", err);};
     // void size(wxSizeEvent& event);
 
 private:
     MainFrame* parent_ptr;
     wxGLContext* glctx_ptr;
-    // myOGLManager* m_oglManager;
-    // int m_winHeight; // We use this var to know if we have been sized
-
+    // std::unique_ptr<GraphicsManager> graphicsManager;
+    GraphicsManager* graphicsManager;
 
     wxDECLARE_EVENT_TABLE();
 };
@@ -64,4 +69,4 @@ enum Event
 };
 
 
-#endif // MAIN_HPP_
+#endif /* MAIN_HPP_ */
