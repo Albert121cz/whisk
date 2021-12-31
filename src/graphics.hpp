@@ -18,6 +18,8 @@ private:
     GLuint vertexArrayObject;
     GLuint vertexBufferObject;
     GLuint shaderProgram;
+
+    void errorCheck(int cause);
 };
 
 #endif /* GRAPHICS_HPP_ */

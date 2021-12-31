@@ -77,14 +77,17 @@ void GraphicsManager::render()
     glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram(shaderProgram);
-    GLenum err = glGetError();
-    if (err != GL_NO_ERROR)
-    {
-        parentCanvas->logError(err);
-    }
-    else
-        parentCanvas->logError(69);
+    errorCheck(PROGRAM_USE);
     glBindVertexArray(vertexArrayObject);
     glDrawArrays(GL_TRIANGLES, 0, 3);
     // parentCanvas->SwapBuffers();
+}
+
+
+void GraphicsManager::errorCheck(int cause)
+{
+    #ifdef DEBUG
+        for (GLenum err = glGetError(); err != GL_NO_ERROR; err = glGetError())
+            parentCanvas->oglErrorLog(cause, err);
+    #endif /* DEBUG */
 }

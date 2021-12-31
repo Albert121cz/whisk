@@ -17,9 +17,9 @@ bool App::OnInit()
 
 
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
-    EVT_MENU(LOAD, MainFrame::load)
-    EVT_MENU(wxID_ABOUT, MainFrame::about)
-    EVT_MENU(wxID_EXIT, MainFrame::exit)
+    EVT_MENU(LOAD, MainFrame::onLoad)
+    EVT_MENU(wxID_ABOUT, MainFrame::onAbout)
+    EVT_MENU(wxID_EXIT, MainFrame::onExit)
 wxEND_EVENT_TABLE()
 
 
@@ -31,7 +31,7 @@ MainFrame::MainFrame(const wxString& title,
         logger_ptr = new wxLogStream(&std::cout);
         wxLog::SetActiveTarget(logger_ptr);
         wxLog::SetVerbose(true);
-    #endif // DEBUG
+    #endif /* DEBUG */
     
     wxMenu *menuContextFile = new wxMenu;
     menuContextFile->Append(Event::LOAD, "&Load...\tCtrl-L", "Load a OBJ file");
@@ -81,7 +81,7 @@ bool MainFrame::opengl_initialized()
 }
 
 
-void MainFrame::load(wxCommandEvent& event)
+void MainFrame::onLoad(wxCommandEvent& event)
 {
     wxFileDialog loadFileDialog(this, _("Load OBJ file"), "", "", 
                     "OBJ files (*.obj)|*.obj", wxFD_OPEN|wxFD_FILE_MUST_EXIST);
@@ -99,7 +99,7 @@ void MainFrame::load(wxCommandEvent& event)
 }
 
 
-void MainFrame::about(wxCommandEvent& event)
+void MainFrame::onAbout(wxCommandEvent& event)
 {
     wxMessageBox("This is NOT a wxWidgets' Hello world sample",
                  "About Hello World", wxOK | wxICON_INFORMATION );
@@ -169,4 +169,59 @@ void Canvas::onSize(wxSizeEvent& event)
     GetClientSize(&usableWidth, &usableHeight);
     wxLogVerbose("Available window space: %ix%i", usableWidth, usableHeight);
     glViewport(0, 0, usableWidth, usableHeight);
+}
+
+
+void Canvas::oglErrorLog(int cause, int err)
+{
+    std::string causeStr, errStr;
+    switch (cause)
+    {
+    case (SHADER_CREATE):
+        causeStr = "shader creation";
+        break;
+    case (PROGRAM_LINK):
+        causeStr = "program linkage";
+        break;
+    case (PROGRAM_USE):
+        causeStr = "program usage";
+        break;
+    case (BUFFER_LOAD):
+        causeStr = "loading data into buffer";
+        break;
+    case (DEL):
+        causeStr = "deletion";
+        break;
+    }
+    
+    switch (err)
+    {
+    case (GL_INVALID_ENUM):
+        errStr = "Invalid enum";
+        break;
+    case (GL_INVALID_VALUE):
+        errStr = "Invalid value";
+        break;
+    case (GL_INVALID_OPERATION):
+        errStr = "Invalid operation";
+        break;
+    case (GL_STACK_OVERFLOW):
+        errStr = "Stack overflow";
+        break;
+    case (GL_STACK_UNDERFLOW):
+        errStr = "Stack underflow";
+        break;
+    case (GL_OUT_OF_MEMORY):
+        errStr = "Out of memory";
+        break;
+    case (GL_TABLE_TOO_LARGE):
+        errStr = "Table too large";
+        break;
+    default:
+        errStr = "Unknown error";
+        break;
+    }
+
+    wxLogVerbose("OpenGL ERROR occured!   Error code: %s, Last operation: %s",
+                                                             errStr, causeStr);
 }

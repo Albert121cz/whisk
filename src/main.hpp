@@ -10,6 +10,7 @@
 #include <wx/wfstream.h>
 #include <wx/glcanvas.h>
 #include <wx/wx.h>
+#include <GL/glew.h>
 #include <memory>
 
 #define OGL_MAJOR_VERSION 4
@@ -32,12 +33,12 @@ public:
 private:
     #ifdef DEBUG
         wxLog* logger_ptr;
-    #endif
+    #endif /* DEBUG */
     Canvas* canvas_ptr;
 
-    void load(wxCommandEvent& event);
-    void about(wxCommandEvent& event);
-    void exit(wxCommandEvent& event) {Close(true);}
+    void onLoad(wxCommandEvent& event);
+    void onAbout(wxCommandEvent& event);
+    void onExit(wxCommandEvent& event) {Close(true);}
 
     wxDECLARE_EVENT_TABLE();
 };
@@ -50,8 +51,7 @@ public:
     
     void onPaint(wxPaintEvent& event);
     void onSize(wxSizeEvent& event);
-    // TODO: make useful error reporting
-    void logError(int err) {wxLogVerbose("%i", err);};
+    void oglErrorLog(int cause, int err);
 
 private:
     MainFrame* parent_ptr;
@@ -64,6 +64,15 @@ private:
 enum Event
 {
     LOAD
+};
+
+enum ErrorCause
+{
+    SHADER_CREATE,
+    PROGRAM_LINK,
+    PROGRAM_USE,
+    BUFFER_LOAD,
+    DEL
 };
 
 
