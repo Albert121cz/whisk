@@ -10,7 +10,7 @@
 #include <wx/wfstream.h>
 #include <wx/glcanvas.h>
 #include <wx/wx.h>
-#include <GL/glew.h>
+#include <memory>
 
 #define OGL_MAJOR_VERSION 4
 #define OGL_MINOR_VERSION 6
@@ -48,17 +48,15 @@ public:
     Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs);
     bool glctx_exists() {return glctx_ptr != NULL;}
     
-    void paint(wxPaintEvent& event);
-    std::pair<int, int>getCtxSize();
+    void onPaint(wxPaintEvent& event);
+    void onSize(wxSizeEvent& event);
     // TODO: make useful error reporting
     void logError(int err) {wxLogVerbose("%i", err);};
-    // void size(wxSizeEvent& event);
 
 private:
     MainFrame* parent_ptr;
     wxGLContext* glctx_ptr;
-    // std::unique_ptr<GraphicsManager> graphicsManager;
-    GraphicsManager* graphicsManager;
+    std::unique_ptr<GraphicsManager> graphicsManager;
 
     wxDECLARE_EVENT_TABLE();
 };

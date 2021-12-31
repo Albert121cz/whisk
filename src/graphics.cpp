@@ -17,15 +17,13 @@ const char* fragmentShaderSource = "#version 330 core\n"
 
 GLfloat testVertices[] =
 {
-    -0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f,
-    0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f,
-    0.0f, 0.5f * float(sqrt(3)) * 2 / 3, 0.0f
+    -1.0f, -1.0f, 0.0f,
+    1.0f, -1.0f, 0.0f,
+    0.0f, 1.0f, 0.0f
 };
 
 GraphicsManager::GraphicsManager(Canvas* parentCanvas)
 {
-    glViewport(0, 0, 800, 600);
-
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
     glCompileShader(vertexShader);

@@ -23,12 +23,9 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
 wxEND_EVENT_TABLE()
 
 
-// The frame style is altered, so that the window cannot be resized, hence no
-// need for handling the size change
 MainFrame::MainFrame(const wxString& title,
                      const wxPoint& pos, const wxSize& size)
-         : wxFrame(NULL, wxID_ANY, title, pos, size,
-                wxDEFAULT_FRAME_STYLE & ~(wxRESIZE_BORDER | wxMAXIMIZE_BOX))
+         : wxFrame(NULL, wxID_ANY, title, pos, size)
 {
     #ifdef DEBUG
         logger_ptr = new wxLogStream(&std::cout);
@@ -68,7 +65,7 @@ MainFrame::MainFrame(const wxString& title,
         canvas_ptr = NULL;
     }
 
-    // SetMinSize(wxSize(250, 200));
+    SetMinSize(wxSize(250, 200));
 }
 
 
@@ -110,9 +107,8 @@ void MainFrame::about(wxCommandEvent& event)
 
 
 wxBEGIN_EVENT_TABLE(Canvas, wxGLCanvas)
-    EVT_PAINT(Canvas::paint)
-    // TODO: handle resizing
-    // EVT_SIZE(Canvas::size)
+    EVT_PAINT(Canvas::onPaint)
+    EVT_SIZE(Canvas::onSize)
     // EVT_MOUSE_EVENTS(MyGLCanvas::OnMouse)
 wxEND_EVENT_TABLE()
 
@@ -153,23 +149,24 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
     else
         wxLogVerbose("Glew successfully initialized");
 
-    graphicsManager = new GraphicsManager(this);
-    // std::unique_ptr<GraphicsManager> graphicsManager = std::make_unique<GraphicsManager>(this);
-
+    graphicsManager = std::make_unique<GraphicsManager>(this);
 }
 
 
-std::pair<int, int> getCtxSize()
+void Canvas::onPaint(wxPaintEvent& event)
 {
-// TODO: finish this function so viewport fits in the window without overlapping
-// with the interface
-}
-
-
-void Canvas::paint(wxPaintEvent& WXUNUSED(event))
-{
+    // this is mandatory to be able to draw in the window
     wxPaintDC dc(this);
 
     graphicsManager->render();
     SwapBuffers();
+}
+
+
+void Canvas::onSize(wxSizeEvent& event)
+{
+    int usableWidth, usableHeight;
+    GetClientSize(&usableWidth, &usableHeight);
+    wxLogVerbose("Available window space: %ix%i", usableWidth, usableHeight);
+    glViewport(0, 0, usableWidth, usableHeight);
 }
