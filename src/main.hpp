@@ -2,6 +2,7 @@
 #define MAIN_HPP_
 
 #include "graphics.hpp"
+#include "shaders.hpp"
 
 #ifdef DEBUG
     #include <iostream>
@@ -51,7 +52,7 @@ public:
     
     void onPaint(wxPaintEvent& event);
     void onSize(wxSizeEvent& event);
-    void oglErrorLog(int cause, int err);
+    void log(std::string str);
 
 private:
     MainFrame* parent_ptr;
@@ -64,15 +65,6 @@ private:
 enum Event
 {
     LOAD
-};
-
-enum ErrorCause
-{
-    SHADER_CREATE,
-    PROGRAM_LINK,
-    PROGRAM_USE,
-    BUFFER_LOAD,
-    DEL
 };
 
 

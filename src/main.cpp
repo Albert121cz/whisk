@@ -172,56 +172,7 @@ void Canvas::onSize(wxSizeEvent& event)
 }
 
 
-void Canvas::oglErrorLog(int cause, int err)
+void Canvas::log(std::string str)
 {
-    std::string causeStr, errStr;
-    switch (cause)
-    {
-    case (SHADER_CREATE):
-        causeStr = "shader creation";
-        break;
-    case (PROGRAM_LINK):
-        causeStr = "program linkage";
-        break;
-    case (PROGRAM_USE):
-        causeStr = "program usage";
-        break;
-    case (BUFFER_LOAD):
-        causeStr = "loading data into buffer";
-        break;
-    case (DEL):
-        causeStr = "deletion";
-        break;
-    }
-    
-    switch (err)
-    {
-    case (GL_INVALID_ENUM):
-        errStr = "Invalid enum";
-        break;
-    case (GL_INVALID_VALUE):
-        errStr = "Invalid value";
-        break;
-    case (GL_INVALID_OPERATION):
-        errStr = "Invalid operation";
-        break;
-    case (GL_STACK_OVERFLOW):
-        errStr = "Stack overflow";
-        break;
-    case (GL_STACK_UNDERFLOW):
-        errStr = "Stack underflow";
-        break;
-    case (GL_OUT_OF_MEMORY):
-        errStr = "Out of memory";
-        break;
-    case (GL_TABLE_TOO_LARGE):
-        errStr = "Table too large";
-        break;
-    default:
-        errStr = "Unknown error";
-        break;
-    }
-
-    wxLogVerbose("OpenGL ERROR occured!   Error code: %s, Last operation: %s",
-                                                             errStr, causeStr);
+    wxLogVerbose(str.c_str());
 }

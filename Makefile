@@ -7,22 +7,29 @@ debug: LDFLAGS  += -Wl,-subsystem,console
 
 OUTPUT := main.exe
 
+SRC_DIR = ./src
+BUILD_DIR = ./build
+SHADERS_DIR = ./src/shaders
+
 CXXFLAGS += -I./lib/gcc810_x64_dll/mswu -I./include
 LDFLAGS += -L./lib/gcc810_x64_dll
 LDFLAGS += -L./lib/glew
 LDFLAGS += -lwxbase315u_gcc810_x64 -lwxmsw315u_core_gcc810_x64 -lwxmsw315u_gl_gcc810_x64 -lopengl32
 LDFLAGS += -lglew32
 
-SOURCES := $(wildcard ./src/*.cpp)
+SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
 OBJS := $(SOURCES:%.cpp=%.o)
 
-DEPS := $(wildcard ./src/*.hpp)
+SHADERS_SRC := $(wildcard $(SHADERS_DIR)/*.vert) $(wildcard $(SHADERS_DIR)/*.frag)
+SHADERS := $(subst $(SHADERS_DIR),$(BUILD_DIR),$(SHADERS_SRC))
+
+DEPS := $(wildcard $(SRC_DIR)/*.hpp)
 
 all: $(OUTPUT)
 
 debug: all
 
-$(OUTPUT): $(OBJS)
+$(OUTPUT): $(OBJS) $(SHADERS)
 	@echo linking...
 	@$(CXX) -o ./build/$@ $(OBJS) $(LDFLAGS)
 
@@ -32,10 +39,10 @@ $(OUTPUT): $(OBJS)
 	@echo $(CXX) -c $<
 	@$(CXX) $< -c -o $@ $(CXXFLAGS)
 
-%.hpp.gch: %.hpp
-	@echo $(CXX) -c $<
-	@$(CXX) $< -c -o $@ $(CXXFLAGS)
+$(SHADERS): $(SHADERS_SRC)
+	@echo copying $(@F)
+	@powershell -Command "Copy-Item $< -Destination $@"
 
 clean:
-	@echo rm $(OBJS)
-	@powershell -Command "echo $(OBJS) | Remove-Item"
+	@echo rm $(OBJS) $(SHADERS)
+	@powershell -Command "echo $(OBJS) $(SHADERS) | Remove-Item"
