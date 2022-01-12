@@ -39,7 +39,7 @@ $(OUTPUT): $(OBJS) $(SHADERS)
 	@echo $(CXX) -c $<
 	@$(CXX) $< -c -o $@ $(CXXFLAGS)
 
-$(SHADERS): $(SHADERS_SRC)
+$(SHADERS): $(BUILD_DIR)/% : $(SHADERS_DIR)/%
 	@echo copying $(@F)
 	@powershell -Command "Copy-Item $< -Destination $@"
 

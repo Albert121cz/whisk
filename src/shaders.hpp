@@ -8,23 +8,24 @@
 #include <fstream>
 
 #ifdef DEBUG
-#include <sstream>
+    #include <sstream>
 #endif /* DEBUG */  
 
 class Shader
 {
 public:
     GLuint ID;
-    const int shaderType;
-    bool initialized;
 
     Shader(GraphicsManager* parent, 
-        const char* shaderFile, const int type);
+        const char* shaderFile, const GLenum type);
     ~Shader() {if (initialized) glDeleteShader(ID);}
-    std::string openFile(const char* filename);
 
 private:
+    const GLenum shaderType;
     GraphicsManager* parentManager;
+    bool initialized;
+
+    std::string openFile(const char* filename);
 };
 
 

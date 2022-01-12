@@ -22,7 +22,6 @@ GLuint testIndices[] =
 
 GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
 {
-    // TODO: fix shader loading from files
     Shader vertexShader(this, "default.vert", GL_VERTEX_SHADER);
     Shader fragmentShader(this, "default.frag", GL_FRAGMENT_SHADER);
 

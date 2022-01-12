@@ -2,7 +2,7 @@
 
 
 Shader::Shader(GraphicsManager* parent, 
-            const char* shaderFile, const int type)
+            const char* shaderFile, const GLenum type)
             : shaderType(type), parentManager(parent)
 {
     initialized = false;
@@ -15,6 +15,14 @@ Shader::Shader(GraphicsManager* parent,
             parentManager->sendToLog(messageStream.str());
         #endif /* DEBUG */
         return;
+    }
+    else
+    {
+        #ifdef DEBUG
+            std::ostringstream messageStream;
+            messageStream << "Shader loaded: " << shaderFile;
+            parentManager->sendToLog(messageStream.str());
+        #endif /* DEBUG */
     }
 
     const char* shaderSource = shaderString.c_str();
@@ -29,14 +37,36 @@ Shader::Shader(GraphicsManager* parent,
     glShaderSource(ID, 1, &shaderSource, NULL);
 
     glCompileShader(ID);
-    parentManager->oglErrorCheck(SHADER_CREATE);
+
+    #ifdef DEBUG
+        GLint compileStatus;
+        glGetShaderiv(ID, GL_COMPILE_STATUS, &compileStatus);
+        if (compileStatus != GL_TRUE)
+        {
+            GLsizei logLength = 0;
+            GLchar message[1024];
+            glGetShaderInfoLog(ID, 1024, &logLength, message);
+
+            std::ostringstream messageStream;
+            messageStream << "Shader compilation failed: " << shaderFile 
+                            << "\n" << message;
+            parentManager->sendToLog(messageStream.str());
+        }
+        else
+        {
+            std::ostringstream messageStream;
+            messageStream << "Shader compiled: " << shaderFile;
+            parentManager->sendToLog(messageStream.str());
+        }
+        parentManager->oglErrorCheck(SHADER_CREATE);
+    #endif /* DEBUG */
 }
 
 
 // https://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
 std::string Shader::openFile(const char *filename)
 {
-    std::ifstream in(filename, std::ios::in | std::ios::binary);
+    std::ifstream in(filename, std::ios::binary);
     if (in)
     {
         std::string contents;
