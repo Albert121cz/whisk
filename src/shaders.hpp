@@ -2,10 +2,12 @@
 #define SHADERS_HPP_
 
 #include "main.hpp"
-#include "graphics.hpp"
 
 #include <string>
 #include <fstream>
+#include <regex>
+#include <vector>
+#include <memory>
 
 #ifdef DEBUG
     #include <sstream>
@@ -21,11 +23,29 @@ public:
     ~Shader() {if (initialized) glDeleteShader(ID);}
 
 private:
-    const GLenum shaderType;
     GraphicsManager* parentManager;
+    const GLenum shaderType;
     bool initialized;
 
     std::string openFile(const char* filename);
+};
+
+class ShaderManager
+{
+public:
+    ShaderManager(GraphicsManager* parent) : parentManager(parent)
+                    {ID = glCreateProgram();}
+    ~ShaderManager() {glDeleteProgram(ID);}
+
+    void addShader(const char* file);
+    void linkProgram();
+    GLuint getProgramID() {return ID;}
+
+private:
+    GLuint ID;
+    GraphicsManager* parentManager;
+    std::vector<std::unique_ptr<Shader>> vertexShaders;
+    std::vector<std::unique_ptr<Shader>> fragmentShaders;
 };
 
 

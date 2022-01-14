@@ -22,15 +22,10 @@ GLuint testIndices[] =
 
 GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
 {
-    Shader vertexShader(this, "default.vert", GL_VERTEX_SHADER);
-    Shader fragmentShader(this, "default.frag", GL_FRAGMENT_SHADER);
-
-    shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader.ID);
-    glAttachShader(shaderProgram, fragmentShader.ID);
-    glLinkProgram(shaderProgram);
-
-    oglErrorCheck(PROGRAM_LINK);
+    shaders = new ShaderManager(this);
+    shaders->addShader("default.vert");
+    shaders->addShader("default.frag");
+    shaders->linkProgram();
 
     // GLuint vertexArrayObject, vertexBufferObject;
     // vertex array must be generated before the buffers
@@ -65,10 +60,10 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
 
 GraphicsManager::~GraphicsManager()
 {
+    delete shaders;
     glDeleteVertexArrays(1, &vertexArrayObject);
     glDeleteBuffers(1, &vertexBufferObject);
     glDeleteBuffers(1, &elementBufferObject);
-    glDeleteProgram(shaderProgram);
 }
 
 
@@ -76,7 +71,7 @@ void GraphicsManager::render()
 {
     glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    glUseProgram(shaderProgram);
+    glUseProgram(shaders->getProgramID());
     oglErrorCheck(PROGRAM_USE);
     glBindVertexArray(vertexArrayObject);
     glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);

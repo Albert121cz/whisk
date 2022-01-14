@@ -11,6 +11,7 @@
 #endif /* DEBUG */
 
 class Canvas;
+class ShaderManager;
 
 class GraphicsManager
 {
@@ -22,10 +23,10 @@ public:
     void sendToLog(std::string message);
 private:
     Canvas* parentCanvas;
+    ShaderManager* shaders;
     GLuint vertexArrayObject;
     GLuint vertexBufferObject;
     GLuint elementBufferObject;
-    GLuint shaderProgram;
 };
 
 

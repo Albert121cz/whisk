@@ -3,7 +3,7 @@
 
 Shader::Shader(GraphicsManager* parent, 
             const char* shaderFile, const GLenum type)
-            : shaderType(type), parentManager(parent)
+            : parentManager(parent), shaderType(type)
 {
     initialized = false;
     std::string shaderString = openFile(shaderFile);
@@ -78,4 +78,67 @@ std::string Shader::openFile(const char *filename)
         return(contents);
     }
     return {};
+}
+
+
+void ShaderManager::addShader(const char* file)
+{
+    std::string fileString(file);
+    std::smatch extension;
+    
+    // https://cpprocks.com/files/c++11-regex-cheatsheet.pdf
+    const std::regex extensionRegex("\\..*$");
+
+    std::regex_search(fileString, extension, extensionRegex);
+
+    if (extension[0] == ".vert")
+    {
+        vertexShaders.push_back(std::make_unique<Shader>
+                    (parentManager, file, GL_VERTEX_SHADER));
+    }
+    else if (extension[0] == ".frag")
+    {
+        vertexShaders.push_back(std::make_unique<Shader>
+                    (parentManager, file, GL_FRAGMENT_SHADER));
+    }
+    else
+    {
+        #ifdef DEBUG
+            std::ostringstream messageStream;
+            messageStream << "Unsupported file extension: " << file;
+            parentManager->sendToLog(messageStream.str());
+        #endif /* DEBUG */
+    }
+}
+
+
+void ShaderManager::linkProgram()
+{
+    for(auto it = vertexShaders.begin(); it != vertexShaders.end(); it++)
+        glAttachShader(ID, (*it)->ID);
+
+    for(auto it = fragmentShaders.begin(); it != fragmentShaders.end(); it++)
+        glAttachShader(ID, (*it)->ID);
+
+    glLinkProgram(ID);
+
+    #ifdef DEBUG
+        GLint linkStatus;
+        glGetProgramiv(ID, GL_LINK_STATUS, &linkStatus);
+        if (linkStatus != GL_TRUE)
+        {
+            GLsizei logLength = 0;
+            GLchar message[1024];
+            glGetProgramInfoLog(ID, 1024, &logLength, message);
+
+            std::ostringstream messageStream;
+            messageStream << "Shader program linking failed:\n" << message;
+            parentManager->sendToLog(messageStream.str());
+        }
+        else
+        {
+            parentManager->sendToLog(std::string("Shader program linked"));
+        }
+        parentManager->oglErrorCheck(PROGRAM_LINK);
+    #endif /* DEBUG */
 }
