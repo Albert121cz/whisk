@@ -87,20 +87,18 @@ void ShaderManager::addShader(const char* file)
     std::smatch extension;
     
     // https://cpprocks.com/files/c++11-regex-cheatsheet.pdf
-    const std::regex extensionRegex("\\..*$");
+    const std::regex extensionRegex("\\..{4}$");
 
     std::regex_search(fileString, extension, extensionRegex);
 
     if (extension[0] == ".vert")
-    {
         vertexShaders.push_back(std::make_unique<Shader>
                     (parentManager, file, GL_VERTEX_SHADER));
-    }
+
     else if (extension[0] == ".frag")
-    {
         vertexShaders.push_back(std::make_unique<Shader>
                     (parentManager, file, GL_FRAGMENT_SHADER));
-    }
+
     else
     {
         #ifdef DEBUG
@@ -115,10 +113,10 @@ void ShaderManager::addShader(const char* file)
 void ShaderManager::linkProgram()
 {
     for(auto it = vertexShaders.begin(); it != vertexShaders.end(); it++)
-        glAttachShader(ID, (*it)->ID);
+        glAttachShader(ID, (*it)->getShaderID());
 
     for(auto it = fragmentShaders.begin(); it != fragmentShaders.end(); it++)
-        glAttachShader(ID, (*it)->ID);
+        glAttachShader(ID, (*it)->getShaderID());
 
     glLinkProgram(ID);
 
@@ -141,4 +139,11 @@ void ShaderManager::linkProgram()
         }
         parentManager->oglErrorCheck(PROGRAM_LINK);
     #endif /* DEBUG */
+}
+
+
+void ShaderManager::useProgram()
+{
+    glUseProgram(ID);
+    parentManager->oglErrorCheck(PROGRAM_USE);
 }

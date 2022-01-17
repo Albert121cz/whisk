@@ -3,6 +3,7 @@
 
 #include "graphics.hpp"
 #include "shaders.hpp"
+#include "vertices.hpp"
 
 #ifdef DEBUG
     #include <iostream>

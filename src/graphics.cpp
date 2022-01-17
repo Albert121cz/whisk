@@ -71,8 +71,7 @@ void GraphicsManager::render()
 {
     glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    glUseProgram(shaders->getProgramID());
-    oglErrorCheck(PROGRAM_USE);
+    shaders->useProgram();
     glBindVertexArray(vertexArrayObject);
     glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
     // parentCanvas->SwapBuffers();

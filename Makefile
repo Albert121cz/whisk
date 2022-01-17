@@ -1,4 +1,4 @@
-CXX := g++
+CXX := g++ --std=c++17
 CXXFLAGS := -Winvalid-pch -Wall
 LDFLAGS  := -Wl,-subsystem,windows
 

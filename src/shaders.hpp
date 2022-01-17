@@ -16,13 +16,14 @@
 class Shader
 {
 public:
-    GLuint ID;
-
     Shader(GraphicsManager* parent, 
         const char* shaderFile, const GLenum type);
     ~Shader() {if (initialized) glDeleteShader(ID);}
 
+    GLuint getShaderID() {return ID;}
+
 private:
+    GLuint ID;
     GraphicsManager* parentManager;
     const GLenum shaderType;
     bool initialized;
@@ -39,7 +40,7 @@ public:
 
     void addShader(const char* file);
     void linkProgram();
-    GLuint getProgramID() {return ID;}
+    void useProgram();
 
 private:
     GLuint ID;
