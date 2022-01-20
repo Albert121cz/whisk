@@ -3,30 +3,63 @@
 
 #include "main.hpp"
 
-/*
+#include <vector>
+#include <GL/glew.h>
+
+class GraphicsManager;
+
 template <typename T>
 class Buffer
 {
 public:
-    Buffer(T[] data, const GLenum type);
+    Buffer(GraphicsManager* parent, const GLenum type) 
+        : parentManager(parent), bufferType(type) {glGenBuffers(1, &ID);}
+    ~Buffer() {deleteBuffer();}
 
-    void deleteBuffer();
+// TODO: check if it is necessary to explicitly delete or just use destructor
+    void deleteBuffer() {glDeleteBuffers(1, &ID);}
+    // void bindBuffer() {glBindBuffer(bufferType, ID);}
+    void sendData(T* data, GLsizei size);
+    GLenum getType() {return bufferType;}
+    GLuint getID() {return ID;}
 
-private:
+protected:
     GLuint ID;
+    GraphicsManager* parentManager;
     const GLenum bufferType;
 };
 
+class VertexBuffer : public Buffer<GLfloat>
+{
+public:
+    VertexBuffer(GraphicsManager* parent)
+        : Buffer<GLfloat>(parent, GL_ARRAY_BUFFER){};
+};
 
-template <typename T>
+
+class ElementBuffer : public Buffer<GLuint>
+{
+public:
+    ElementBuffer(GraphicsManager* parent)
+        : Buffer<GLuint>(parent, GL_ELEMENT_ARRAY_BUFFER){};
+};
+
+
 class VertexArray
 {
 public:
     VertexArray(GraphicsManager* parent) : parentManager(parent) 
-                {glGenVertexArrays(1, &ID);}
-    ~VertexArray() {glDeleteVertexArrays(1, &ID);}
+        {glGenVertexArrays(1, &ID);}
+    ~VertexArray() {deleteArray();}
 
-    void addBuffer(Buffer<T>* buffer);
+// TODO: check if it is necessary to explicitly delete or just use destructor
+    void deleteArray() {glDeleteVertexArrays(1, &ID);}
+    void link(Buffer<GLfloat>* buffer)
+        {buffers.push_back(std::pair(buffer->getType(), buffer->getID()));}
+    void link(Buffer<GLuint>* buffer)
+        {buffers.push_back(std::pair(buffer->getType(), buffer->getID()));}
+    void enable();
+    void bind() {glBindVertexArray(ID);}
 
 private:
     GLuint ID;
@@ -35,5 +68,4 @@ private:
 
 };
 
-*/
 #endif /* VERTICES_HPP_ */

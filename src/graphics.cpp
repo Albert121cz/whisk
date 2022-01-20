@@ -1,24 +1,23 @@
-#include "main.hpp"
 #include "graphics.hpp"
 
 // https://github.com/VictorGordan/opengl-tutorials
 
 GLfloat testVertices[] =
 {
-    -0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f,
-    0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f,
-    0.0f, 0.5f * float(sqrt(3)) * 2 / 3, 0.0f,
-    -0.5f / 2, 0.5f * float(sqrt(3)) / 6, 0.0f,
-    0.5f / 2, 0.5f * float(sqrt(3)) / 6, 0.0f,
-    0.0f, -0.5f * float(sqrt(3)) / 3, 0.0f
+    0.0f, 1.0f, -0.5f,
+    -0.5f, -0.5f, -0.5f,
+    0.5f, -0.5f, -0.5f,
+    0.0f, -0.0f, 0.5f,
 };
 
 GLuint testIndices[] =
 {
-    0, 3, 5,
-    3, 2, 4,
-    5, 4, 1,
+    0, 1, 2,
+    0, 1, 3,
+    1, 2, 3,
+    0, 2, 3
 };
+
 
 GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
 {
@@ -27,43 +26,34 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
     shaders->addShader("default.frag");
     shaders->linkProgram();
 
-    // GLuint vertexArrayObject, vertexBufferObject;
     // vertex array must be generated before the buffers
-    glGenVertexArrays(1, &vertexArrayObject);
-    glGenBuffers(1, &vertexBufferObject);
-    glGenBuffers(1, &elementBufferObject);
-    
-    glBindVertexArray(vertexArrayObject);
-    
-    glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(testVertices),
-                            testVertices, GL_STATIC_DRAW);
+    vertexArray = new VertexArray(this);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(testIndices),
-                                            testIndices, GL_STATIC_DRAW);
+    vertexBuffer = new VertexBuffer(this);
+    elementBuffer = new ElementBuffer(this);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-                        3 * sizeof(GLfloat), (void*)0);
-    glEnableVertexAttribArray(0);
+    vertexArray->bind();
 
-    oglErrorCheck(BUFFER_LOAD);
+    vertexBuffer->sendData(testVertices, sizeof(testVertices));
+    elementBuffer->sendData(testIndices, sizeof(testIndices));
 
-    // not necessary - just to be sure the buffer or array cannot be changed
-    // vertex array must be unbound after the array buffer,
-    // but before element buffer
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    vertexArray->link(vertexBuffer);
+    vertexArray->link(elementBuffer);
+
+    vertexArray->enable();
 }
 
 
 GraphicsManager::~GraphicsManager()
 {
     delete shaders;
-    glDeleteVertexArrays(1, &vertexArrayObject);
-    glDeleteBuffers(1, &vertexBufferObject);
-    glDeleteBuffers(1, &elementBufferObject);
+    delete vertexArray;
+    delete vertexBuffer;
+    delete elementBuffer;
+
+    // vertexArray->deleteArray();
+    // vertexBuffer->deleteBuffer();
+    // elementBuffer->deleteBuffer();
 }
 
 
@@ -71,8 +61,9 @@ void GraphicsManager::render()
 {
     glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     shaders->useProgram();
-    glBindVertexArray(vertexArrayObject);
+    vertexArray->bind();
     glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
     // parentCanvas->SwapBuffers();
 }
@@ -129,6 +120,12 @@ void GraphicsManager::oglErrorCheck(int cause)
                 break;
             case (BUFFER_LOAD):
                 causeStr = "Loading data into buffer";
+                break;
+            case (ARRAY_ENABLE):
+                causeStr = "Enabling vertex array";
+                break;
+            case (VERTEX_ATTRIB):
+                causeStr = "Making vertex attribute data array";
                 break;
             case (DEL):
                 causeStr = "Deletion";

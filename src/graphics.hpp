@@ -12,6 +12,9 @@
 
 class Canvas;
 class ShaderManager;
+class VertexArray;
+class VertexBuffer;
+class ElementBuffer;
 
 class GraphicsManager
 {
@@ -24,9 +27,9 @@ public:
 private:
     Canvas* parentCanvas;
     ShaderManager* shaders;
-    GLuint vertexArrayObject;
-    GLuint vertexBufferObject;
-    GLuint elementBufferObject;
+    VertexArray* vertexArray;
+    VertexBuffer* vertexBuffer;
+    ElementBuffer* elementBuffer;
 };
 
 
@@ -36,6 +39,8 @@ enum ErrorCause
     PROGRAM_LINK,
     PROGRAM_USE,
     BUFFER_LOAD,
+    ARRAY_ENABLE,
+    VERTEX_ATTRIB,
     DEL
 };
 

@@ -8,10 +8,13 @@
 #include <regex>
 #include <vector>
 #include <memory>
+#include <GL/glew.h>
 
 #ifdef DEBUG
     #include <sstream>
-#endif /* DEBUG */  
+#endif /* DEBUG */
+
+class GraphicsManager;
 
 class Shader
 {
