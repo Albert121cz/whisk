@@ -81,7 +81,7 @@ bool MainFrame::opengl_initialized()
 }
 
 
-void MainFrame::onLoad(wxCommandEvent& event)
+void MainFrame::onLoad(wxCommandEvent&)
 {
     wxFileDialog loadFileDialog(this, _("Load OBJ file"), "", "", 
                     "OBJ files (*.obj)|*.obj", wxFD_OPEN|wxFD_FILE_MUST_EXIST);
@@ -99,7 +99,7 @@ void MainFrame::onLoad(wxCommandEvent& event)
 }
 
 
-void MainFrame::onAbout(wxCommandEvent& event)
+void MainFrame::onAbout(wxCommandEvent&)
 {
     wxMessageBox("This is NOT a wxWidgets' Hello world sample",
                  "About Hello World", wxOK | wxICON_INFORMATION );
@@ -150,20 +150,33 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
         wxLogVerbose("Glew successfully initialized");
 
     graphicsManager = std::make_unique<GraphicsManager>(this);
+
+    // possible leak - don't know if wxWidgets automatically deletes this
+    timer = new RenderTimer(this);
 }
 
 
-void Canvas::onPaint(wxPaintEvent& event)
+void Canvas::flip()
+{
+    SwapBuffers();
+    graphicsManager->render();
+}
+
+
+void Canvas::onPaint(wxPaintEvent&)
 {
     // this is mandatory to be able to draw in the window
     wxPaintDC dc(this);
 
-    graphicsManager->render();
-    SwapBuffers();
+    if (firstPaint)
+    {
+        flip();
+        firstPaint = false;
+    }
 }
 
 
-void Canvas::onSize(wxSizeEvent& event)
+void Canvas::onSize(wxSizeEvent&)
 {
     int usableWidth, usableHeight;
     GetClientSize(&usableWidth, &usableHeight);

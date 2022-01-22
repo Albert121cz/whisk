@@ -12,14 +12,22 @@ void Buffer<T>::sendData(T* data, GLsizei size)
 
 void VertexArray::enable()
 {
+    // bind linked buffers
     for (auto it = buffers.begin(); it != buffers.end(); it++)
         glBindBuffer((*it).first, (*it).second);
+
     glVertexAttribPointer(
-        0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
     parentManager->oglErrorCheck(VERTEX_ATTRIB);
     glEnableVertexAttribArray(0);
     parentManager->oglErrorCheck(ARRAY_ENABLE);
 
+    // vertex array must be unbound first
+    glBindVertexArray(0);
+
+    // unbind linked buffers
+    for (auto it = buffers.begin(); it != buffers.end(); it++)
+        glBindBuffer((*it).first, 0);
 }
 
 

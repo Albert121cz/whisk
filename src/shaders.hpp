@@ -44,6 +44,7 @@ public:
     void addShader(const char* file);
     void linkProgram();
     void useProgram();
+    GLuint getID() {return ID;}
 
 private:
     GLuint ID;

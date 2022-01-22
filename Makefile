@@ -1,5 +1,7 @@
+MAKEFLAGS += -j 4
+
 CXX := g++ --std=c++17
-CXXFLAGS := -Winvalid-pch -Wall
+CXXFLAGS := -Winvalid-pch -Wall -Wextra
 LDFLAGS  := -Wl,-subsystem,windows
 
 debug: CXXFLAGS += -g -DDEBUG

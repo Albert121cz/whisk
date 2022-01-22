@@ -26,20 +26,16 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
     shaders->addShader("default.frag");
     shaders->linkProgram();
 
-    // vertex array must be generated before the buffers
-    vertexArray = new VertexArray(this);
-
     vertexBuffer = new VertexBuffer(this);
-    elementBuffer = new ElementBuffer(this);
-
-    vertexArray->bind();
-
     vertexBuffer->sendData(testVertices, sizeof(testVertices));
+
+    elementBuffer = new ElementBuffer(this);
     elementBuffer->sendData(testIndices, sizeof(testIndices));
 
+    vertexArray = new VertexArray(this);
+    vertexArray->bind();
     vertexArray->link(vertexBuffer);
     vertexArray->link(elementBuffer);
-
     vertexArray->enable();
 }
 
@@ -50,21 +46,27 @@ GraphicsManager::~GraphicsManager()
     delete vertexArray;
     delete vertexBuffer;
     delete elementBuffer;
-
-    // vertexArray->deleteArray();
-    // vertexBuffer->deleteBuffer();
-    // elementBuffer->deleteBuffer();
 }
 
 
 void GraphicsManager::render()
 {
-    glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+    glClearColor(0.23f, 0.23f, 0.23f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    int64_t time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    float red = ((sin(time/4) + 1.0f)/2.0f);
+    float green = ((sin(time/4+atan(1)*4*(2.0f/3.0f)) + 1.0f)/2.0f);
+    float blue = ((sin(time/4+atan(1)*4*(4.0f/3.0f)) + 1.0f)/2.0f);
+    int colorUniform = glGetUniformLocation(shaders->getID(), "outsideColor");
+
     shaders->useProgram();
+
+    glUniform4f(colorUniform, red, green, blue, 1.0f);
+
     vertexArray->bind();
-    glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
     // parentCanvas->SwapBuffers();
 }
 
@@ -144,4 +146,16 @@ void GraphicsManager::sendToLog(std::string message)
     #ifdef DEBUG
         parentCanvas->log(message);
     #endif /* DEBUG */
+}
+
+
+RenderTimer::RenderTimer(Canvas* parent) : parentCanvas(parent)
+{
+    Start(1000/FPS);
+}
+
+
+void RenderTimer::Notify()
+{
+    parentCanvas->flip();
 }

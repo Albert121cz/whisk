@@ -14,11 +14,8 @@ class Buffer
 public:
     Buffer(GraphicsManager* parent, const GLenum type) 
         : parentManager(parent), bufferType(type) {glGenBuffers(1, &ID);}
-    ~Buffer() {deleteBuffer();}
+    ~Buffer() {glDeleteBuffers(1, &ID);}
 
-// TODO: check if it is necessary to explicitly delete or just use destructor
-    void deleteBuffer() {glDeleteBuffers(1, &ID);}
-    // void bindBuffer() {glBindBuffer(bufferType, ID);}
     void sendData(T* data, GLsizei size);
     GLenum getType() {return bufferType;}
     GLuint getID() {return ID;}
@@ -50,10 +47,8 @@ class VertexArray
 public:
     VertexArray(GraphicsManager* parent) : parentManager(parent) 
         {glGenVertexArrays(1, &ID);}
-    ~VertexArray() {deleteArray();}
+    ~VertexArray() {glDeleteVertexArrays(1, &ID);}
 
-// TODO: check if it is necessary to explicitly delete or just use destructor
-    void deleteArray() {glDeleteVertexArrays(1, &ID);}
     void link(Buffer<GLfloat>* buffer)
         {buffers.push_back(std::pair(buffer->getType(), buffer->getID()));}
     void link(Buffer<GLuint>* buffer)

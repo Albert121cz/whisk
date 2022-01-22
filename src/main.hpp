@@ -25,6 +25,7 @@ public:
 };
 
 class Canvas;
+class RenderTimer;
 
 class MainFrame : public wxFrame
 {
@@ -38,9 +39,9 @@ private:
     #endif /* DEBUG */
     Canvas* canvas_ptr;
 
-    void onLoad(wxCommandEvent& event);
-    void onAbout(wxCommandEvent& event);
-    void onExit(wxCommandEvent& event) {Close(true);}
+    void onLoad(wxCommandEvent&);
+    void onAbout(wxCommandEvent&);
+    void onExit(wxCommandEvent&) {Close(true);}
 
     wxDECLARE_EVENT_TABLE();
 };
@@ -49,15 +50,19 @@ class Canvas : public wxGLCanvas
 {
 public:
     Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs);
+
     bool glctx_exists() {return glctx_ptr != NULL;}
+    void flip();
     
-    void onPaint(wxPaintEvent& event);
-    void onSize(wxSizeEvent& event);
+    void onPaint(wxPaintEvent&);
+    void onSize(wxSizeEvent&);
     void log(std::string str);
 
 private:
+    bool firstPaint = true;
     MainFrame* parent_ptr;
     wxGLContext* glctx_ptr;
+    RenderTimer* timer;
     std::unique_ptr<GraphicsManager> graphicsManager;
 
     wxDECLARE_EVENT_TABLE();
