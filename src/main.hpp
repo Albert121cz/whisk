@@ -31,6 +31,7 @@ class MainFrame : public wxFrame
 {
 public:
     MainFrame(const wxString& title, const wxPoint& pos, const wxSize& size);
+    ~MainFrame();
     bool opengl_initialized();
 
 private:
@@ -38,10 +39,11 @@ private:
         wxLog* logger_ptr;
     #endif /* DEBUG */
     Canvas* canvas_ptr;
+    RenderTimer* timer = nullptr;
 
     void onLoad(wxCommandEvent&);
     void onAbout(wxCommandEvent&);
-    void onExit(wxCommandEvent&) {Close(true);}
+    void onExit(wxCommandEvent&);
 
     wxDECLARE_EVENT_TABLE();
 };
@@ -59,10 +61,8 @@ public:
     void log(std::string str);
 
 private:
-    bool firstPaint = true;
     MainFrame* parent_ptr;
     wxGLContext* glctx_ptr;
-    RenderTimer* timer;
     std::unique_ptr<GraphicsManager> graphicsManager;
 
     wxDECLARE_EVENT_TABLE();

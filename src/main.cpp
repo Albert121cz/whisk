@@ -58,6 +58,8 @@ MainFrame::MainFrame(const wxString& title,
     {
         wxLogVerbose("The display is supported with default attributes");
         canvas_ptr = new Canvas(this, glDefAttrs);
+
+        timer = new RenderTimer(canvas_ptr);
     }
     else
     {
@@ -66,6 +68,12 @@ MainFrame::MainFrame(const wxString& title,
     }
 
     SetMinSize(wxSize(250, 200));
+}
+
+
+MainFrame::~MainFrame()
+{
+    delete timer;
 }
 
 
@@ -103,6 +111,13 @@ void MainFrame::onAbout(wxCommandEvent&)
 {
     wxMessageBox("This is NOT a wxWidgets' Hello world sample",
                  "About Hello World", wxOK | wxICON_INFORMATION );
+}
+
+
+void MainFrame::onExit(wxCommandEvent&)
+{
+    timer->Stop(); 
+    Close(true);
 }
 
 
@@ -147,17 +162,17 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
         glctx_ptr = NULL;
     }
     else
+    {
         wxLogVerbose("Glew successfully initialized");
-
-    graphicsManager = std::make_unique<GraphicsManager>(this);
-
-    // possible leak - don't know if wxWidgets automatically deletes this
-    timer = new RenderTimer(this);
+        graphicsManager = std::make_unique<GraphicsManager>(this);
+    }
 }
 
 
 void Canvas::flip()
 {
+    wxClientDC dc(this);
+
     SwapBuffers();
     graphicsManager->render();
 }
@@ -168,11 +183,8 @@ void Canvas::onPaint(wxPaintEvent&)
     // this is mandatory to be able to draw in the window
     wxPaintDC dc(this);
 
-    if (firstPaint)
-    {
-        flip();
-        firstPaint = false;
-    }
+    graphicsManager->render();
+    SwapBuffers();
 }
 
 
