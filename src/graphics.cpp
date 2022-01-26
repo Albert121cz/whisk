@@ -179,6 +179,7 @@ void GraphicsManager::setUniformMatrix(glm::mat4 mat, const char* name)
 RenderTimer::RenderTimer(Canvas* parent) : parentCanvas(parent)
 {
     StartOnce(0);
+    lastTick = std::chrono::steady_clock::now();
 }
 
 
@@ -186,6 +187,19 @@ void RenderTimer::Notify()
 {
     parentCanvas->flip();
     StartOnce();
+    calculateFPS();
+    std::cout << "FPS: " << FPS << std::endl;
+}
+
+
+void RenderTimer::calculateFPS()
+{
+    std::chrono::steady_clock::time_point currentTick;
+    currentTick = std::chrono::steady_clock::now();
+    int difference = std::chrono::duration_cast<std::chrono::milliseconds>
+        (currentTick - lastTick).count();
+    FPS = (FPS * FPSSmoothing) + (1000/difference * (1.0-FPSSmoothing));
+    lastTick = currentTick;
 }
 
 
@@ -213,12 +227,12 @@ void Camera::move(std::pair<bool, wxPoint> mouseInfo)
         int xMove = previousMousePos.x - mouseInfo.second.x;
         int yMove = previousMousePos.y - mouseInfo.second.y;
 
-        std::cout << "x: " << xMove << " y: " << yMove << " yaw: " << yaw << " pitch: " << pitch << std::endl;
+        // std::cout << "x: " << xMove << " y: " << yMove << " yaw: " << yaw << " pitch: " << pitch << std::endl;
 
         yaw += mouseSensitivity * xMove;
         pitch += mouseSensitivity * yMove;
     }
-    
+
     previousMousePos = mouseInfo.second;
     mouseMovingPreviousFrame = true;
 }

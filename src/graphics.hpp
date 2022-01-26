@@ -9,6 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
+#include <chrono>
 
 #ifdef DEBUG
     #include <sstream>
@@ -47,8 +48,9 @@ private:
 };
 
 
-// this solution is only temporary, the correct way is to use ogl framebuffers
 // https://wiki.wxwidgets.org/Making_a_render_loop
+// https://stackoverflow.com/a/87333
+// https://stackoverflow.com/a/27739925
 class RenderTimer : public wxTimer
 {
 public:
@@ -56,9 +58,15 @@ public:
 
     // function which is periodically triggered
     void Notify();
+    float getFPS() {return FPS;}
 
 private:
+    const float FPSSmoothing = 0.9f;
+    std::chrono::steady_clock::time_point lastTick;
+    float FPS = 0.0f;
     Canvas* parentCanvas;
+    
+    void calculateFPS();
 };
 
 
