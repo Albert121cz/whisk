@@ -68,16 +68,26 @@ public:
     void flip();
     void addTex(const unsigned char* data, int width, int height);
     float viewportAspectRatio();
-    
-    void onPaint(wxPaintEvent&);
-    void onSize(wxSizeEvent&);
     void log(std::string str);
+    std::pair<bool, wxPoint> getCameraMouseInfo()
+        {return std::make_pair(cameraMoving, wxGetMousePosition());}
 
 private:
     MainFrame* parent_ptr;
     wxGLContext* wxGLCtx;
     std::unique_ptr<GraphicsManager> graphicsManager;
     std::pair<int, int> viewportDims;
+    bool mouseInsideWindow;
+    bool cameraMoving = false;
+    wxPoint mousePos;
+    
+    void onPaint(wxPaintEvent&);
+    void onSize(wxSizeEvent&);
+    void onEnteringWindow(wxMouseEvent&) {mouseInsideWindow = true;}
+    void onLeavingWindow(wxMouseEvent&) {mouseInsideWindow = false; cameraMoving = false;}
+    void onRMBDown(wxMouseEvent&);
+    void onRMBUp(wxMouseEvent&) {cameraMoving = false;}
+
 
     wxDECLARE_EVENT_TABLE();
 };

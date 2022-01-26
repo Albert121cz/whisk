@@ -65,19 +65,27 @@ private:
 class Camera
 {
 public:
-    glm::mat4 viewMatrix()
-        {return glm::lookAt(target - toTarget, target, upDirection);}
+    glm::mat4 viewMatrix();
     glm::mat4 projectionMatrix(float aspectRatio)
         {return glm::perspective(glm::radians(fov), aspectRatio, 
             closeClipBorder, farClipBorder);}
+    void move(std::pair<bool, wxPoint> mouseInfo);
 
 private:
+    bool mouseMovingPreviousFrame = false;
+    wxPoint previousMousePos;
+    float mouseSensitivity = 0.1f;
+
+    float yaw = -90.0f;
+    float pitch = 0.0f;
+    float radius = 10.0f;
+    
     float fov = 45.0f;
     float closeClipBorder = 0.1f;
     float farClipBorder = 100.0f;
 
+    glm::vec3 toTarget;
     glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 toTarget = glm::vec3(0.0f, 0.0f, -4.0f);
     glm::vec3 upDirection = glm::vec3(0.0f, 1.0f, 0.0f);
 };
 

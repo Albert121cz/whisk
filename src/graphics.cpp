@@ -68,6 +68,8 @@ void GraphicsManager::render()
         glUniform1i(texUniform, 1);
     else
         glUniform1i(texUniform, 0);
+
+    camera->move(parentCanvas->getCameraMouseInfo());
     
     int modelMat = glGetUniformLocation(shaders->getID(), "model");
     glm::mat4 model = glm::mat4(1.0f);
@@ -184,4 +186,39 @@ void RenderTimer::Notify()
 {
     parentCanvas->flip();
     StartOnce();
+}
+
+
+glm::mat4 Camera::viewMatrix()
+{
+    toTarget.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    toTarget.y = sin(glm::radians(pitch));
+    toTarget.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    toTarget = glm::normalize(toTarget) * radius;
+
+    return glm::lookAt(target - toTarget, target, upDirection);
+}
+
+
+void Camera::move(std::pair<bool, wxPoint> mouseInfo)
+{
+    if (!mouseInfo.first)
+    {
+        mouseMovingPreviousFrame = false;
+        return;
+    }
+    
+    if (mouseMovingPreviousFrame)
+    {
+        int xMove = previousMousePos.x - mouseInfo.second.x;
+        int yMove = previousMousePos.y - mouseInfo.second.y;
+
+        std::cout << "x: " << xMove << " y: " << yMove << " yaw: " << yaw << " pitch: " << pitch << std::endl;
+
+        yaw += mouseSensitivity * xMove;
+        pitch += mouseSensitivity * yMove;
+    }
+    
+    previousMousePos = mouseInfo.second;
+    mouseMovingPreviousFrame = true;
 }

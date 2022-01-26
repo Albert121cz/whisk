@@ -166,7 +166,10 @@ void MainFrame::onExit(wxCommandEvent&)
 wxBEGIN_EVENT_TABLE(Canvas, wxGLCanvas)
     EVT_PAINT(Canvas::onPaint)
     EVT_SIZE(Canvas::onSize)
-    // EVT_MOUSE_EVENTS(MyGLCanvas::OnMouse)
+    EVT_ENTER_WINDOW(Canvas::onEnteringWindow)
+    EVT_LEAVE_WINDOW(Canvas::onLeavingWindow)
+    EVT_RIGHT_DOWN(Canvas::onRMBDown)
+    EVT_RIGHT_UP(Canvas::onRMBUp)
 wxEND_EVENT_TABLE()
 
 
@@ -237,6 +240,12 @@ float Canvas::viewportAspectRatio()
 }
 
 
+void Canvas::log(std::string str)
+{
+    wxLogVerbose(str.c_str());
+}
+
+
 void Canvas::onPaint(wxPaintEvent&)
 {
     // this is mandatory to be able to draw in the window
@@ -257,7 +266,12 @@ void Canvas::onSize(wxSizeEvent&)
 }
 
 
-void Canvas::log(std::string str)
+// BUG: it is possible to leave the window with the camera still moving
+void Canvas::onRMBDown(wxMouseEvent&)
 {
-    wxLogVerbose(str.c_str());
+    if (!mouseInsideWindow)
+        return;
+
+    cameraMoving = true;
+    mousePos = wxGetMousePosition();
 }
