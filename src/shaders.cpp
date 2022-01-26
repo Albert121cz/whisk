@@ -92,12 +92,20 @@ void ShaderManager::addShader(const char* file)
     std::regex_search(fileString, extension, extensionRegex);
 
     if (extension[0] == ".vert")
+    {
         vertexShaders.push_back(std::make_unique<Shader>
-                    (parentManager, file, GL_VERTEX_SHADER));
+            (parentManager, file, GL_VERTEX_SHADER));
+        if (!vertexShaders.back()->isInitialized())
+            vertexShaders.pop_back();
+    }
 
     else if (extension[0] == ".frag")
-        vertexShaders.push_back(std::make_unique<Shader>
-                    (parentManager, file, GL_FRAGMENT_SHADER));
+    {
+        fragmentShaders.push_back(std::make_unique<Shader>
+            (parentManager, file, GL_FRAGMENT_SHADER));
+        if (!fragmentShaders.back()->isInitialized())
+            fragmentShaders.pop_back();
+    }
 
     else
     {

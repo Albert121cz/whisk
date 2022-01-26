@@ -24,6 +24,7 @@ public:
     ~Shader() {if (initialized) glDeleteShader(ID);}
 
     GLuint getShaderID() {return ID;}
+    bool isInitialized() {return initialized;}
 
 private:
     GLuint ID;

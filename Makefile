@@ -5,7 +5,7 @@ CXXFLAGS := -Winvalid-pch -Wall -Wextra
 LDFLAGS  := -Wl,-subsystem,windows
 
 debug: CXXFLAGS += -g -DDEBUG
-debug: LDFLAGS  += -Wl,-subsystem,console
+debug: LDFLAGS  += -Wl,-subsystem,console -static-libgcc -static-libstdc++
 
 OUTPUT := main.exe
 
@@ -35,7 +35,7 @@ $(OUTPUT): $(OBJS) $(SHADERS)
 	@echo linking...
 	@$(CXX) -o ./build/$@ $(OBJS) $(LDFLAGS)
 
-.PHONY: all debug clean
+.PHONY: all debug clean test
 
 %.o: %.cpp $(DEPS)
 	@echo $(CXX) -c $<

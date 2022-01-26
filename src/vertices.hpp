@@ -3,6 +3,7 @@
 
 #include "main.hpp"
 
+#include <memory>
 #include <vector>
 #include <GL/glew.h>
 
@@ -13,7 +14,7 @@ class Buffer
 {
 public:
     Buffer(GraphicsManager* parent, const GLenum type) 
-        : parentManager(parent), bufferType(type) {glGenBuffers(1, &ID);}
+        : parentManager(parent), bufferType(type) {glCreateBuffers(1, &ID);}
     ~Buffer() {glDeleteBuffers(1, &ID);}
 
     void sendData(T* data, GLsizei size);
@@ -62,5 +63,44 @@ private:
     std::vector<std::pair<GLenum, GLuint>> buffers;
 
 };
+
+
+class Texture
+{
+public:
+    Texture(GraphicsManager* parent, const unsigned char* imageData,
+        int imageWidth, int imageHeight, const GLenum type=GL_TEXTURE_2D);
+    ~Texture() {glDeleteTextures(1, &ID);}
+
+    void bind() {glBindTexture(texType, ID);}
+
+private:
+    GLuint ID;
+    GraphicsManager* parentManager;
+    const GLenum texType;
+};
+
+
+// TODO: this has to be reworked - every object will handle its texture
+class TextureManager
+{
+public:
+    TextureManager(GraphicsManager* parent) : parentManager(parent){};
+    // ~TextureManager();
+
+    void addTexture(const unsigned char* data, int width, int height)
+        {textures.push_back(
+            std::make_unique<Texture>(parentManager, data, width, height));}
+    
+    bool bindTex(unsigned int idx) {
+        if (idx < textures.size()) 
+            {textures[idx]->bind(); return true;}
+        return false;}
+
+private:
+    GraphicsManager* parentManager;
+    std::vector<std::unique_ptr<Texture>> textures;
+};
+
 
 #endif /* VERTICES_HPP_ */

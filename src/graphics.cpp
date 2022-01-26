@@ -1,21 +1,22 @@
 #include "graphics.hpp"
 
 // https://github.com/VictorGordan/opengl-tutorials
+// https://learnopengl.com/
 
+// TODO: split into 3 components, make Object class
 GLfloat testVertices[] =
 {
-    0.0f, 1.0f, -0.5f,
-    -0.5f, -0.5f, -0.5f,
-    0.5f, -0.5f, -0.5f,
-    0.0f, -0.0f, 0.5f,
+    // positions          // colors           // texture coords
+     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,
+     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
+    -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f
 };
 
 GLuint testIndices[] =
 {
     0, 1, 2,
-    0, 1, 3,
-    1, 2, 3,
-    0, 2, 3
+    0, 2, 3,
 };
 
 
@@ -25,6 +26,8 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
     shaders->addShader("default.vert");
     shaders->addShader("default.frag");
     shaders->linkProgram();
+
+    textures = new TextureManager(this);
 
     vertexBuffer = new VertexBuffer(this);
     vertexBuffer->sendData(testVertices, sizeof(testVertices));
@@ -37,37 +40,49 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
     vertexArray->link(vertexBuffer);
     vertexArray->link(elementBuffer);
     vertexArray->enable();
+
+    camera = new Camera();
 }
 
 
 GraphicsManager::~GraphicsManager()
 {
     delete shaders;
+    delete textures;
     delete vertexArray;
     delete vertexBuffer;
     delete elementBuffer;
+    delete camera;
 }
 
 
 void GraphicsManager::render()
 {
-    glClearColor(0.23f, 0.23f, 0.23f, 1.0f);
+    glClearColor(0.135f, 0.135f, 0.135f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    int64_t time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    float red = ((sin(time/4) + 1.0f)/2.0f);
-    float green = ((sin(time/4+atan(1)*4*(2.0f/3.0f)) + 1.0f)/2.0f);
-    float blue = ((sin(time/4+atan(1)*4*(4.0f/3.0f)) + 1.0f)/2.0f);
-    int colorUniform = glGetUniformLocation(shaders->getID(), "outsideColor");
 
     shaders->useProgram();
 
-    glUniform4f(colorUniform, red, green, blue, 1.0f);
+    int texUniform = glGetUniformLocation(shaders->getID(), "useTex");
+    if (textures->bindTex(0))
+        glUniform1i(texUniform, 1);
+    else
+        glUniform1i(texUniform, 0);
+    
+    int modelMat = glGetUniformLocation(shaders->getID(), "model");
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::rotate(model, glm::radians(45.0f), glm::normalize(glm::vec3(1.0f, 1.0f, 0.0f)));
+    model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(1.25f, 1.25f, 1.25f));
+    glUniformMatrix4fv(modelMat, 1, GL_FALSE, glm::value_ptr(model));
+
+    setUniformMatrix(camera->viewMatrix(), "view");
+
+    setUniformMatrix(camera->projectionMatrix(parentCanvas->viewportAspectRatio()), "projection");
+
 
     vertexArray->bind();
-    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
-    // parentCanvas->SwapBuffers();
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
 
@@ -123,6 +138,9 @@ void GraphicsManager::oglErrorCheck(int cause)
             case (BUFFER_LOAD):
                 causeStr = "Loading data into buffer";
                 break;
+            case (TEX_LOAD):
+                causeStr = "Loading texture";
+                break;
             case (ARRAY_ENABLE):
                 causeStr = "Enabling vertex array";
                 break;
@@ -149,13 +167,21 @@ void GraphicsManager::sendToLog(std::string message)
 }
 
 
+void GraphicsManager::setUniformMatrix(glm::mat4 mat, const char* name)
+{
+    int location = glGetUniformLocation(shaders->getID(), name);
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat));
+}
+
+
 RenderTimer::RenderTimer(Canvas* parent) : parentCanvas(parent)
 {
-    Start(1000/FPS);
+    StartOnce(0);
 }
 
 
 void RenderTimer::Notify()
 {
     parentCanvas->flip();
+    StartOnce();
 }

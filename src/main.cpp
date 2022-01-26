@@ -3,21 +3,35 @@
 
 wxIMPLEMENT_APP(App);
 
+// TODO: make wxListBox with objects and textures in different frame
+// -> https://zetcode.com/gui/wxwidgets/widgetsII/
+
+
 bool App::OnInit()
 {
-    MainFrame *frame = new MainFrame("Hello World", 
+    wxInitAllImageHandlers();
+
+    frame = new MainFrame("Hello World", 
                                      wxPoint(50, 50), wxSize(800, 600));
     frame->Show(true);
 
-    if (!frame->opengl_initialized())
+    if (!frame->openGLInitialized())
         return false;
 
     return true;
 }
 
 
+int App::OnExit()
+{
+    delete frame;
+    return 0;
+}
+
+
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
-    EVT_MENU(LOAD, MainFrame::onLoad)
+    EVT_MENU(LOAD_OBJ, MainFrame::onObjLoad)
+    EVT_MENU(LOAD_TEX, MainFrame::onTexLoad)
     EVT_MENU(wxID_ABOUT, MainFrame::onAbout)
     EVT_MENU(wxID_EXIT, MainFrame::onExit)
 wxEND_EVENT_TABLE()
@@ -28,13 +42,16 @@ MainFrame::MainFrame(const wxString& title,
          : wxFrame(NULL, wxID_ANY, title, pos, size)
 {
     #ifdef DEBUG
-        logger_ptr = new wxLogStream(&std::cout);
-        wxLog::SetActiveTarget(logger_ptr);
+        logger = new wxLogStream(&std::cout);
+        wxLog::SetActiveTarget(logger);
         wxLog::SetVerbose(true);
     #endif /* DEBUG */
     
     wxMenu *menuContextFile = new wxMenu;
-    menuContextFile->Append(Event::LOAD, "&Load...\tCtrl-L", "Load a OBJ file");
+    menuContextFile->Append(Event::LOAD_OBJ, "&Load object...\tCtrl-O",
+        "Load OBJ file");
+    menuContextFile->Append(Event::LOAD_TEX, "&Load texture...\tCtrl-T",
+        "Load texture file");
     menuContextFile->AppendSeparator();
     menuContextFile->Append(wxID_EXIT);
 
@@ -57,14 +74,14 @@ MainFrame::MainFrame(const wxString& title,
     if (supported)
     {
         wxLogVerbose("The display is supported with default attributes");
-        canvas_ptr = new Canvas(this, glDefAttrs);
+        canvas = new Canvas(this, glDefAttrs);
 
-        timer = new RenderTimer(canvas_ptr);
+        timer = new RenderTimer(canvas);
     }
     else
     {
         wxLogError("The display is not supported with default attributes");
-        canvas_ptr = NULL;
+        canvas = NULL;
     }
 
     SetMinSize(wxSize(250, 200));
@@ -77,22 +94,22 @@ MainFrame::~MainFrame()
 }
 
 
-bool MainFrame::opengl_initialized()
+bool MainFrame::openGLInitialized()
 {
-    if (canvas_ptr == NULL)
+    if (canvas == NULL)
         return false;
     
-    if (!canvas_ptr->glctx_exists())
+    if (!canvas->wxGLCtxExists())
         return false;
     
     return true;
 }
 
 
-void MainFrame::onLoad(wxCommandEvent&)
+void MainFrame::onObjLoad(wxCommandEvent&)
 {
     wxFileDialog loadFileDialog(this, _("Load OBJ file"), "", "", 
-                    "OBJ files (*.obj)|*.obj", wxFD_OPEN|wxFD_FILE_MUST_EXIST);
+                    "OBJ (*.obj)|*.obj", wxFD_OPEN|wxFD_FILE_MUST_EXIST);
     
     if (loadFileDialog.ShowModal() == wxID_CANCEL)
         return;
@@ -101,9 +118,34 @@ void MainFrame::onLoad(wxCommandEvent&)
     
     if (load_stream.IsOk())
     {
-        wxLogVerbose("File opened: '%s'", loadFileDialog.GetPath());
+        wxLogVerbose("Object file opened: '%s'", loadFileDialog.GetPath());
         return;
     }
+}
+
+
+void MainFrame::onTexLoad(wxCommandEvent&)
+{
+    wxFileDialog loadFileDialog(this, _("Load texture file"), "", "", 
+    "PNG (*.png)|*.png|BPM (*.bmp)|*.bmp|JPEG (*.jpg; *.jpeg)|*.jpg;*.jpeg", 
+                wxFD_OPEN|wxFD_FILE_MUST_EXIST);
+    
+    if (loadFileDialog.ShowModal() == wxID_CANCEL)
+        return;
+
+    wxImage image(loadFileDialog.GetPath());
+
+
+    if (image.IsOk())
+    {
+        wxLogVerbose("Texture file opened: '%s'", loadFileDialog.GetPath());
+        // mirror vertically
+        image = image.Mirror(false);
+        canvas->addTex(image.GetData(), image.GetWidth(), image.GetHeight());
+    }
+    else
+        wxMessageBox("The texture file is not a valid image file",
+                "Texture load error", wxOK | wxICON_ERROR, this);
 }
 
 
@@ -135,31 +177,34 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
     wxGLContextAttrs ctxAttrs;
     ctxAttrs.PlatformDefaults().OGLVersion(OGL_MAJOR_VERSION,
                                             OGL_MINOR_VERSION).EndList();
-    glctx_ptr = new wxGLContext(this, NULL, &ctxAttrs);
+    wxGLCtx = new wxGLContext(this, NULL, &ctxAttrs);
 
-    if ( !glctx_ptr->IsOK() )
+    if ( !wxGLCtx->IsOK() )
     {
         wxString msg_out;
         msg_out.Printf("The graphics driver failed to initialize OpenGL v%i.%i",
                             OGL_MAJOR_VERSION, OGL_MINOR_VERSION);
         wxMessageBox(msg_out,
                      "OpenGL initialization error", wxOK | wxICON_ERROR, this);
-        delete glctx_ptr;
-        glctx_ptr = NULL;
+        delete wxGLCtx;
+        wxGLCtx = NULL;
+        return;
     }
     else
         wxLogVerbose("OpenGL v%i.%i successfully initialized",
                         OGL_MAJOR_VERSION, OGL_MINOR_VERSION);
 
-    SetCurrent(*glctx_ptr);
+    SetCurrent(*wxGLCtx);
 
     glewExperimental = GL_TRUE;
-    if (glewInit() != GLEW_OK)
+    GLenum error = glewInit();
+    if (error != GLEW_OK)
     {
+        wxLogVerbose("%s", glewGetErrorString(error));
         wxMessageBox("Glew failed to initialize", "Glew error",
                                     wxOK | wxICON_ERROR, this);
-        delete glctx_ptr;
-        glctx_ptr = NULL;
+        delete wxGLCtx;
+        wxGLCtx = NULL;
     }
     else
     {
@@ -178,6 +223,20 @@ void Canvas::flip()
 }
 
 
+void Canvas::addTex(const unsigned char* data, int width, int height)
+{
+    graphicsManager->getTexManagerPtr()->addTexture(data, width, height);
+}
+
+
+float Canvas::viewportAspectRatio()
+{
+    float width = static_cast<float>(viewportDims.first);
+    float height = static_cast<float>(viewportDims.second);
+    return width / height;
+}
+
+
 void Canvas::onPaint(wxPaintEvent&)
 {
     // this is mandatory to be able to draw in the window
@@ -190,10 +249,11 @@ void Canvas::onPaint(wxPaintEvent&)
 
 void Canvas::onSize(wxSizeEvent&)
 {
-    int usableWidth, usableHeight;
-    GetClientSize(&usableWidth, &usableHeight);
-    wxLogVerbose("Available window space: %ix%i", usableWidth, usableHeight);
-    glViewport(0, 0, usableWidth, usableHeight);
+
+    GetClientSize(&viewportDims.first, &viewportDims.second);
+    wxLogVerbose("Viewport dimensions: %ix%i", 
+        viewportDims.first, viewportDims.second);
+    glViewport(0, 0, viewportDims.first, viewportDims.second);
 }
 
 
