@@ -64,7 +64,7 @@ MainFrame::MainFrame(const wxString& title,
 
     SetMenuBar(menuBar);
 
-    CreateStatusBar();
+    CreateStatusBar(2);
     SetStatusText("No file loaded");
 
     wxGLAttributes glDefAttrs;
@@ -76,7 +76,8 @@ MainFrame::MainFrame(const wxString& title,
         wxLogVerbose("The display is supported with default attributes");
         canvas = new Canvas(this, glDefAttrs);
 
-        timer = new RenderTimer(canvas);
+        timer = new RenderTimer(this, 1, canvas);
+        
     }
     else
     {

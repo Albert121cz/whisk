@@ -176,7 +176,8 @@ void GraphicsManager::setUniformMatrix(glm::mat4 mat, const char* name)
 }
 
 
-RenderTimer::RenderTimer(Canvas* parent) : parentCanvas(parent)
+RenderTimer::RenderTimer(MainFrame* parent, int field, Canvas* canvas)
+    : parentFrame(parent), statusBarField(field), renderCanvas(canvas)
 {
     StartOnce(0);
     lastTick = std::chrono::steady_clock::now();
@@ -185,10 +186,13 @@ RenderTimer::RenderTimer(Canvas* parent) : parentCanvas(parent)
 
 void RenderTimer::Notify()
 {
-    parentCanvas->flip();
+    renderCanvas->flip();
     StartOnce();
     calculateFPS();
-    std::cout << "FPS: " << FPS << std::endl;
+
+    // https://stackoverflow.com/a/40766420
+    parentFrame->SetStatusText(
+        wxString::Format(wxT("%.1f FPS"), FPS), statusBarField);
 }
 
 

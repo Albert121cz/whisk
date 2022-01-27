@@ -15,6 +15,7 @@
     #include <sstream>
 #endif /* DEBUG */
 
+class MainFrame;
 class Canvas;
 class ShaderManager;
 class TextureManager;
@@ -54,17 +55,18 @@ private:
 class RenderTimer : public wxTimer
 {
 public:
-    RenderTimer(Canvas* parent);
+    RenderTimer(MainFrame* parent, int field, Canvas* canvas);
 
     // function which is periodically triggered
     void Notify();
-    float getFPS() {return FPS;}
 
 private:
+    MainFrame* parentFrame;
+    int statusBarField;
+    Canvas* renderCanvas;
     const float FPSSmoothing = 0.9f;
     std::chrono::steady_clock::time_point lastTick;
     float FPS = 0.0f;
-    Canvas* parentCanvas;
     
     void calculateFPS();
 };
