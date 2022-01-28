@@ -58,7 +58,6 @@ Shader::Shader(GraphicsManager* parent,
             messageStream << "Shader compiled: " << shaderFile;
             parentManager->sendToLog(messageStream.str());
         }
-        parentManager->oglErrorCheck(SHADER_CREATE);
     #endif /* DEBUG */
 }
 
@@ -145,7 +144,6 @@ void ShaderManager::linkProgram()
         {
             parentManager->sendToLog(std::string("Shader program linked"));
         }
-        parentManager->oglErrorCheck(PROGRAM_LINK);
     #endif /* DEBUG */
 }
 
@@ -153,5 +151,4 @@ void ShaderManager::linkProgram()
 void ShaderManager::useProgram()
 {
     glUseProgram(ID);
-    parentManager->oglErrorCheck(PROGRAM_USE);
 }

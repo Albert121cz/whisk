@@ -63,19 +63,22 @@ class Canvas : public wxGLCanvas
 {
 public:
     Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs);
+    ~Canvas() {delete wxGLCtx;}
 
     bool wxGLCtxExists() {return wxGLCtx != NULL;}
     void flip();
     void addTex(const unsigned char* data, int width, int height);
     float viewportAspectRatio();
     void log(std::string str);
+    bool getDebuggingExt() {return debuggingExt;}
     std::pair<bool, wxPoint> getCameraMouseInfo()
         {return std::make_pair(cameraMoving, wxGetMousePosition());}
 
 private:
     MainFrame* parent_ptr;
-    wxGLContext* wxGLCtx;
+    wxGLContext* wxGLCtx = nullptr;
     std::unique_ptr<GraphicsManager> graphicsManager;
+    bool debuggingExt = false;
     std::pair<int, int> viewportDims;
     bool mouseInsideWindow;
     bool cameraMoving = false;

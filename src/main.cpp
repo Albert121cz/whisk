@@ -191,12 +191,11 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
         wxMessageBox(msg_out,
                      "OpenGL initialization error", wxOK | wxICON_ERROR, this);
         delete wxGLCtx;
-        wxGLCtx = NULL;
+        wxGLCtx = nullptr;
         return;
     }
-    else
-        wxLogVerbose("OpenGL v%i.%i successfully initialized",
-                        OGL_MAJOR_VERSION, OGL_MINOR_VERSION);
+    wxLogVerbose("OpenGL v%i.%i successfully initialized",
+        OGL_MAJOR_VERSION, OGL_MINOR_VERSION);
 
     SetCurrent(*wxGLCtx);
 
@@ -206,15 +205,31 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
     {
         wxLogVerbose("%s", glewGetErrorString(error));
         wxMessageBox("Glew failed to initialize", "Glew error",
-                                    wxOK | wxICON_ERROR, this);
+            wxOK | wxICON_ERROR, this);
         delete wxGLCtx;
-        wxGLCtx = NULL;
+        wxGLCtx = nullptr;
+        return;
+    }
+    wxLogVerbose("Glew successfully initialized");
+
+    if (GLEW_KHR_debug)
+    {
+        debuggingExt = true;
+        wxLogVerbose("Extension KHR_debug supported");
     }
     else
+        wxLogVerbose("Extension KHR_debug not supported, GL messages disabled");
+
+    if (GLEW_ARB_direct_state_access)
+        wxLogVerbose("Extension ARB_direct_state_access supported");
+    else
     {
-        wxLogVerbose("Glew successfully initialized");
-        graphicsManager = std::make_unique<GraphicsManager>(this);
+        wxMessageBox("Your driver does not support ARB_direct_state_access",
+            "Initialization error", wxOK | wxICON_ERROR, this);
+        return;
     }
+
+    graphicsManager = std::make_unique<GraphicsManager>(this);
 }
 
 

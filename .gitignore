@@ -1,5 +1,7 @@
 lib/*
-include/*
+include/GL
+include/glm
+include/wx
 .vscode/*
 build/*
 *.o

@@ -5,8 +5,6 @@ template <typename T>
 void Buffer<T>::sendData(T* data, GLsizei size)
 {
     glNamedBufferData(ID, size, data, GL_STATIC_DRAW);
-
-    parentManager->oglErrorCheck(BUFFER_LOAD);
 }
 
 
@@ -19,21 +17,15 @@ void VertexArray::enable()
     // X Y Z | R G B | S T
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), 
         (GLvoid*)0);
-    parentManager->oglErrorCheck(VERTEX_ATTRIB);
     glEnableVertexAttribArray(0);
-    parentManager->oglErrorCheck(ARRAY_ENABLE);
     
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), 
         (GLvoid*)(3*sizeof(GLfloat)));
-    parentManager->oglErrorCheck(VERTEX_ATTRIB);
     glEnableVertexAttribArray(1);
-    parentManager->oglErrorCheck(ARRAY_ENABLE);
     
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), 
         (GLvoid*)(6*sizeof(GLfloat)));
-    parentManager->oglErrorCheck(VERTEX_ATTRIB);
     glEnableVertexAttribArray(2);
-    parentManager->oglErrorCheck(ARRAY_ENABLE);
 
     // vertex array must be unbound first
     glBindVertexArray(0);
@@ -63,7 +55,6 @@ Texture::Texture(GraphicsManager* parent, const unsigned char* imageData,
     // TODO: load and handle RGBA
     glTexImage2D(texType, 0, GL_RGB, imageWidth, imageHeight, 0, GL_RGB,
         GL_UNSIGNED_BYTE, imageData);
-    parent->oglErrorCheck(TEX_LOAD);
 
     // OpenGL generates the remaining mipmap levels from the image
     glGenerateMipmap(texType);

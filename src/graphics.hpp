@@ -10,6 +10,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 #include <chrono>
+#include "GLDebugMessageCallback.h"
 
 #ifdef DEBUG
     #include <sstream>
@@ -33,7 +34,6 @@ public:
 
     TextureManager* getTexManagerPtr() { return textures;}
     void render();
-    void oglErrorCheck(int cause);
     void sendToLog(std::string message);
 
 private:
@@ -97,19 +97,6 @@ private:
     glm::vec3 toTarget;
     glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 upDirection = glm::vec3(0.0f, 1.0f, 0.0f);
-};
-
-
-enum ErrorCause
-{
-    SHADER_CREATE,
-    PROGRAM_LINK,
-    PROGRAM_USE,
-    BUFFER_LOAD,
-    TEX_LOAD,
-    ARRAY_ENABLE,
-    VERTEX_ATTRIB,
-    DEL
 };
 
 

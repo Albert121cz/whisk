@@ -22,6 +22,14 @@ GLuint testIndices[] =
 
 GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
 {
+    #ifdef DEBUG
+        if (parentCanvas->getDebuggingExt())
+            {
+                glEnable(GL_DEBUG_OUTPUT);
+                glDebugMessageCallback(oglDebug::GLDebugMessageCallback, NULL);
+            }
+    #endif /* DEBUG */
+
     shaders = new ShaderManager(this);
     shaders->addShader("default.vert");
     shaders->addShader("default.frag");
@@ -85,79 +93,6 @@ void GraphicsManager::render()
 
     vertexArray->bind();
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-}
-
-
-void GraphicsManager::oglErrorCheck(int cause)
-{
-    #ifdef DEBUG
-        std::ostringstream messageStream;
-        std::string causeStr, errStr;
-        GLenum err;
-        while((err = glGetError()) != GL_NO_ERROR)
-        {
-            messageStream.str("");
-
-            switch (err)
-            {
-            case (GL_INVALID_ENUM):
-                errStr = "Invalid enum";
-                break;
-            case (GL_INVALID_VALUE):
-                errStr = "Invalid value";
-                break;
-            case (GL_INVALID_OPERATION):
-                errStr = "Invalid operation";
-                break;
-            case (GL_STACK_OVERFLOW):
-                errStr = "Stack overflow";
-                break;
-            case (GL_STACK_UNDERFLOW):
-                errStr = "Stack underflow";
-                break;
-            case (GL_OUT_OF_MEMORY):
-                errStr = "Out of memory";
-                break;
-            case (GL_TABLE_TOO_LARGE):
-                errStr = "Table too large";
-                break;
-            default:
-                errStr = "Unknown error";
-                break;
-            }
-
-            switch (cause)
-            {
-            case (SHADER_CREATE):
-                causeStr = "Shader creation";
-                break;
-            case (PROGRAM_LINK):
-                causeStr = "Program linkage";
-                break;
-            case (PROGRAM_USE):
-                causeStr = "Program usage";
-                break;
-            case (BUFFER_LOAD):
-                causeStr = "Loading data into buffer";
-                break;
-            case (TEX_LOAD):
-                causeStr = "Loading texture";
-                break;
-            case (ARRAY_ENABLE):
-                causeStr = "Enabling vertex array";
-                break;
-            case (VERTEX_ATTRIB):
-                causeStr = "Making vertex attribute data array";
-                break;
-            case (DEL):
-                causeStr = "Deletion";
-                break;
-            }
-            messageStream << "OpenGL ERROR occured!   Error code: " << errStr
-                            << "   Last operation: " << causeStr;
-            parentCanvas->log(messageStream.str());
-        }
-    #endif /* DEBUG */
 }
 
 
