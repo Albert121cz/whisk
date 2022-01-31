@@ -4,6 +4,7 @@
 wxIMPLEMENT_APP(App);
 
 // TODO: make wxListBox with objects and textures in different frame
+// these can be aligned using wxLayoutAlgorithm
 // -> https://zetcode.com/gui/wxwidgets/widgetsII/
 
 
@@ -167,7 +168,6 @@ void MainFrame::onExit(wxCommandEvent&)
 wxBEGIN_EVENT_TABLE(Canvas, wxGLCanvas)
     EVT_PAINT(Canvas::onPaint)
     EVT_SIZE(Canvas::onSize)
-    EVT_ENTER_WINDOW(Canvas::onEnteringWindow)
     EVT_LEAVE_WINDOW(Canvas::onLeavingWindow)
     EVT_RIGHT_DOWN(Canvas::onRMBDown)
     EVT_RIGHT_UP(Canvas::onRMBUp)
@@ -212,21 +212,19 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
     }
     wxLogVerbose("Glew successfully initialized");
 
-    if (GLEW_KHR_debug)
+    std::vector<std::pair<bool, std::string>> extensions = 
     {
-        debuggingExt = true;
-        wxLogVerbose("Extension KHR_debug supported");
-    }
-    else
-        wxLogVerbose("Extension KHR_debug not supported, GL messages disabled");
+        #ifdef DEBUG
+            {GLEW_KHR_debug, "KHR_debug"},
+        #endif /* DEBUG */
+        {GLEW_ARB_direct_state_access, "ARB_direct_state_access"},
+        {GLEW_ARB_bindless_texture, "ARB_bindless_texture"},
+    };
 
-    if (GLEW_ARB_direct_state_access)
-        wxLogVerbose("Extension ARB_direct_state_access supported");
-    else
+    for (auto extension : extensions)
     {
-        wxMessageBox("Your driver does not support ARB_direct_state_access",
-            "Initialization error", wxOK | wxICON_ERROR, this);
-        return;
+        if (!extCheck(extension))
+            return;
     }
 
     graphicsManager = std::make_unique<GraphicsManager>(this);
@@ -262,6 +260,23 @@ void Canvas::log(std::string str)
 }
 
 
+bool Canvas::extCheck(std::pair<bool, std::string> in)
+{
+    if (in.first)
+    {
+        wxLogVerbose("Extension %s supported", in.second);
+        return true;
+    }
+    else
+    {
+        wxString msg;
+        msg.Printf("The GPU driver does not support %s extension", in.second);
+        wxMessageBox(msg, "Initialization error", wxOK | wxICON_ERROR, this);
+        return false;
+    }
+}
+
+
 void Canvas::onPaint(wxPaintEvent&)
 {
     // this is mandatory to be able to draw in the window
@@ -285,9 +300,6 @@ void Canvas::onSize(wxSizeEvent&)
 // BUG: it is possible to leave the window with the camera still moving
 void Canvas::onRMBDown(wxMouseEvent&)
 {
-    if (!mouseInsideWindow)
-        return;
-
     cameraMoving = true;
     mousePos = wxGetMousePosition();
 }

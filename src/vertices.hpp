@@ -6,8 +6,12 @@
 #include <memory>
 #include <vector>
 #include <GL/glew.h>
+#include <glm/glm.hpp>
+
+#define DEFAULT_COLOR 1.0f, 0.0f, 0.0f
 
 class GraphicsManager;
+class TextureManager;
 
 template <typename T>
 class Buffer
@@ -72,16 +76,50 @@ public:
         int imageWidth, int imageHeight, const GLenum type=GL_TEXTURE_2D);
     ~Texture() {glDeleteTextures(1, &ID);}
 
-    void bind() {glBindTexture(texType, ID);}
+    GLuint64 getHandle() {return handle;}
 
 private:
     GLuint ID;
+    GLuint64 handle;
     GraphicsManager* parentManager;
     const GLenum texType;
 };
 
 
-// TODO: this has to be reworked - every object will handle its texture
+class Object
+{
+public:
+    Object(GraphicsManager* parent, TextureManager* textures,
+        GLfloat* vert, size_t vertSize, GLuint* indices, size_t indSize);
+    ~Object();
+    void setColor(GLfloat r, GLfloat g, GLfloat b) 
+        {color[0] = r; color[1] = g; color[2] = b;}
+    // TODO: link texture with object - needs texture menu (wxListBox)
+    void setTexture(unsigned int idx);
+    void draw();
+
+private:
+    GraphicsManager* parentManager;
+    TextureManager* texManager;
+    VertexBuffer* vertexBuffer;
+    ElementBuffer* elementBuffer;
+    VertexArray* vertexArray;
+    std::shared_ptr<Texture> tex;
+
+    int verticesLen;
+    int indicesLen;
+    int combinedLen;
+    GLfloat* combinedData;
+
+    GLuint64 texHandle;
+    GLfloat color[3] = {DEFAULT_COLOR};
+    glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 size = glm::vec3(1.0f, 1.0f, 1.0f);
+    glm::mat4 model;
+};
+
+
 class TextureManager
 {
 public:
@@ -90,16 +128,14 @@ public:
 
     void addTexture(const unsigned char* data, int width, int height)
         {textures.push_back(
-            std::make_unique<Texture>(parentManager, data, width, height));}
+            std::make_shared<Texture>(parentManager, data, width, height));}
     
-    bool bindTex(unsigned int idx) {
-        if (idx < textures.size()) 
-            {textures[idx]->bind(); return true;}
-        return false;}
+    std::shared_ptr<Texture> getTexPtr(unsigned int idx)
+        {return (idx < textures.size() ? textures[idx] : nullptr);}
 
 private:
     GraphicsManager* parentManager;
-    std::vector<std::unique_ptr<Texture>> textures;
+    std::vector<std::shared_ptr<Texture>> textures;
 };
 
 

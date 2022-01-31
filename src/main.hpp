@@ -71,6 +71,7 @@ public:
     float viewportAspectRatio();
     void log(std::string str);
     bool getDebuggingExt() {return debuggingExt;}
+    bool extCheck(std::pair<bool, std::string> in);
     std::pair<bool, wxPoint> getCameraMouseInfo()
         {return std::make_pair(cameraMoving, wxGetMousePosition());}
 
@@ -80,14 +81,12 @@ private:
     std::unique_ptr<GraphicsManager> graphicsManager;
     bool debuggingExt = false;
     std::pair<int, int> viewportDims;
-    bool mouseInsideWindow;
     bool cameraMoving = false;
     wxPoint mousePos;
     
     void onPaint(wxPaintEvent&);
     void onSize(wxSizeEvent&);
-    void onEnteringWindow(wxMouseEvent&) {mouseInsideWindow = true;}
-    void onLeavingWindow(wxMouseEvent&) {mouseInsideWindow = false; cameraMoving = false;}
+    void onLeavingWindow(wxMouseEvent&) {cameraMoving = false;}
     void onRMBDown(wxMouseEvent&);
     void onRMBUp(wxMouseEvent&) {cameraMoving = false;}
 

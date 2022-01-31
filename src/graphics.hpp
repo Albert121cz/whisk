@@ -10,9 +10,10 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 #include <chrono>
-#include "GLDebugMessageCallback.h"
+#include <memory>
 
 #ifdef DEBUG
+    #include "GLDebugMessageCallback.h"
     #include <sstream>
 #endif /* DEBUG */
 
@@ -24,6 +25,7 @@ class VertexBuffer;
 class ElementBuffer;
 class VertexArray;
 class Camera;
+class Object;
 
 
 class GraphicsManager
@@ -33,8 +35,10 @@ public:
     ~GraphicsManager();
 
     TextureManager* getTexManagerPtr() { return textures;}
+    GLuint getShadersID();
     void render();
     void sendToLog(std::string message);
+    void setUniformMatrix(glm::mat4 mat, const char* name);
 
 private:
     Canvas* parentCanvas;
@@ -44,8 +48,7 @@ private:
     ElementBuffer* elementBuffer;
     VertexArray* vertexArray;
     Camera* camera;
-
-    void setUniformMatrix(glm::mat4 mat, const char* name);
+    std::vector<std::unique_ptr<Object>> objects;
 };
 
 

@@ -10,6 +10,8 @@ void Buffer<T>::sendData(T* data, GLsizei size)
 
 void VertexArray::enable()
 {
+    glBindVertexArray(ID);
+
     // bind linked buffers
     for (auto it = buffers.begin(); it != buffers.end(); it++)
         glBindBuffer((*it).first, (*it).second);
@@ -60,6 +62,87 @@ Texture::Texture(GraphicsManager* parent, const unsigned char* imageData,
     glGenerateMipmap(texType);
 
     glBindTexture(texType, 0);
+
+    handle = glGetTextureHandleARB(ID);
+    glMakeTextureHandleResidentARB(handle);
+}
+
+
+Object::Object(GraphicsManager* parent, TextureManager* textures,
+        GLfloat* vert, size_t vertSize, GLuint* indices, size_t indSize)
+    : parentManager(parent), texManager(textures), 
+    verticesLen(vertSize/sizeof(GLfloat)), indicesLen(indSize/sizeof(GLuint))
+{
+// combined array includes position of vertices (x, y, z), colors of vertices
+// without texture (r, g, b), position of vertices in texture (s, t)
+    combinedLen = (verticesLen / 3) * 8;
+    combinedData = new GLfloat[combinedLen];
+    for (size_t vertex = 0; vertex < vertSize / 3; vertex++)
+    {
+        for (size_t coord = 0; coord < 3; coord++)
+            combinedData[vertex * 8 + coord] = vert[vertex * 3 + coord];
+
+        for (size_t clr = 0; clr < 3; clr++)
+            combinedData[vertex * 8 + clr + 3] = color[clr];
+    }
+
+    vertexBuffer = new VertexBuffer(parentManager);
+    vertexBuffer->sendData(combinedData, combinedLen*sizeof(GLfloat));
+
+    elementBuffer = new ElementBuffer(parentManager);
+    elementBuffer->sendData(indices, indicesLen*sizeof(GLuint));
+
+    vertexArray = new VertexArray(parentManager);
+    vertexArray->link(vertexBuffer);
+    vertexArray->link(elementBuffer);
+    vertexArray->enable();
+}
+
+
+Object::~Object()
+{
+    delete vertexArray;
+    delete vertexBuffer;
+    delete elementBuffer;
+}
+
+
+void Object::setTexture(unsigned int idx)
+{
+    tex = texManager->getTexPtr(idx);
+}
+
+
+void Object::draw()
+{
+    int useTexUniform = glGetUniformLocation(parentManager->getShadersID(),
+        "useTex");
+    int samplerUniform = glGetUniformLocation(parentManager->getShadersID(),
+        "texHandle");
+    GLint hasTex;
+    if (tex != nullptr)
+    {
+        hasTex = 1;
+        GLuint64 handle = tex->getHandle();
+        glUniformHandleui64ARB(samplerUniform, handle);
+    }
+    else hasTex = 0;
+    glUniform1i(useTexUniform, hasTex);
+    
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::rotate(model, glm::radians(rotation.x),
+        glm::normalize(glm::vec3(1.0f, 0.0f, 0.0f)));
+    model = glm::rotate(model, glm::radians(rotation.y),
+        glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+    model = glm::rotate(model, glm::radians(rotation.z),
+        glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
+    model = glm::translate(model, position);
+    model = glm::scale(model, size);
+
+    parentManager->setUniformMatrix(model, "model");
+
+    vertexArray->bind();
+    glDrawElements(GL_TRIANGLES, indicesLen*sizeof(GLuint), GL_UNSIGNED_INT, 0);
 }
 
 

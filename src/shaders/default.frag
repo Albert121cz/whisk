@@ -1,16 +1,18 @@
 #version 460 core
-out vec4 FragColor;
+#extension ARB_bindless_texture : require
+
+out vec4 finalColor;
 
 in vec3 vertColor;
 in vec2 vertTexCoord;
 
 uniform int useTex;
-uniform sampler2D texImage;
+uniform sampler2D texHandle;
 
 void main()
 {
-    if (useTex == 0)
-        FragColor = vec4(vertColor, 0.0f);
+    if (useTex == 1)
+        finalColor = texture(texHandle, vertTexCoord);
     else 
-        FragColor = texture(texImage, vertTexCoord);
+        finalColor = vec4(vertColor, 0.0f);
 }

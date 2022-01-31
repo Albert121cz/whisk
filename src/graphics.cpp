@@ -3,14 +3,13 @@
 // https://github.com/VictorGordan/opengl-tutorials
 // https://learnopengl.com/
 
-// TODO: split into 3 components, make Object class
 GLfloat testVertices[] =
 {
-    // positions          // colors           // texture coords
-     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,
-     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
-    -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f
+    // positions
+     0.5f,  0.5f, 0.0f,
+     0.5f, -0.5f, 0.0f,
+    -0.5f, -0.5f, 0.0f,
+    -0.5f,  0.5f, 0.0f,
 };
 
 GLuint testIndices[] =
@@ -37,19 +36,10 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
 
     textures = new TextureManager(this);
 
-    vertexBuffer = new VertexBuffer(this);
-    vertexBuffer->sendData(testVertices, sizeof(testVertices));
-
-    elementBuffer = new ElementBuffer(this);
-    elementBuffer->sendData(testIndices, sizeof(testIndices));
-
-    vertexArray = new VertexArray(this);
-    vertexArray->bind();
-    vertexArray->link(vertexBuffer);
-    vertexArray->link(elementBuffer);
-    vertexArray->enable();
-
     camera = new Camera();
+
+    objects.push_back(std::make_unique<Object>(this, textures, testVertices,
+        sizeof(testVertices), testIndices, sizeof(testIndices)));
 }
 
 
@@ -64,6 +54,12 @@ GraphicsManager::~GraphicsManager()
 }
 
 
+GLuint GraphicsManager::getShadersID() 
+{
+    return shaders->getID();
+}
+
+
 void GraphicsManager::render()
 {
     glClearColor(0.135f, 0.135f, 0.135f, 1.0f);
@@ -71,28 +67,13 @@ void GraphicsManager::render()
 
     shaders->useProgram();
 
-    int texUniform = glGetUniformLocation(shaders->getID(), "useTex");
-    if (textures->bindTex(0))
-        glUniform1i(texUniform, 1);
-    else
-        glUniform1i(texUniform, 0);
-
     camera->move(parentCanvas->getCameraMouseInfo());
-    
-    int modelMat = glGetUniformLocation(shaders->getID(), "model");
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::rotate(model, glm::radians(45.0f), glm::normalize(glm::vec3(1.0f, 1.0f, 0.0f)));
-    model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(1.25f, 1.25f, 1.25f));
-    glUniformMatrix4fv(modelMat, 1, GL_FALSE, glm::value_ptr(model));
 
     setUniformMatrix(camera->viewMatrix(), "view");
-
     setUniformMatrix(camera->projectionMatrix(parentCanvas->viewportAspectRatio()), "projection");
 
-
-    vertexArray->bind();
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    for (auto it = objects.begin(); it != objects.end(); it++)
+        (*it)->draw();
 }
 
 
