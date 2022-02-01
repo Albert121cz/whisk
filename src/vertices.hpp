@@ -106,6 +106,7 @@ private:
     VertexArray* vertexArray;
     std::shared_ptr<Texture> tex;
 
+    // TODO: check - these values might be redundant
     int verticesLen;
     int indicesLen;
     int combinedLen;

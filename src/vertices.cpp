@@ -77,7 +77,8 @@ Object::Object(GraphicsManager* parent, TextureManager* textures,
 // without texture (r, g, b), position of vertices in texture (s, t)
     combinedLen = (verticesLen / 3) * 8;
     combinedData = new GLfloat[combinedLen];
-    for (size_t vertex = 0; vertex < vertSize / 3; vertex++)
+    
+    for (int vertex = 0; vertex < verticesLen / 3; vertex++)
     {
         for (size_t coord = 0; coord < 3; coord++)
             combinedData[vertex * 8 + coord] = vert[vertex * 3 + coord];

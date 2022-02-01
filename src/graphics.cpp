@@ -47,9 +47,6 @@ GraphicsManager::~GraphicsManager()
 {
     delete shaders;
     delete textures;
-    delete vertexArray;
-    delete vertexBuffer;
-    delete elementBuffer;
     delete camera;
 }
 

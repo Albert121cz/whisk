@@ -12,21 +12,13 @@ bool App::OnInit()
 {
     wxInitAllImageHandlers();
 
-    frame = new MainFrame("Hello World", 
-                                     wxPoint(50, 50), wxSize(800, 600));
+    frame = new MainFrame("Hello World", wxPoint(50, 50), wxSize(800, 600));
     frame->Show(true);
 
     if (!frame->openGLInitialized())
         return false;
 
     return true;
-}
-
-
-int App::OnExit()
-{
-    delete frame;
-    return 0;
 }
 
 

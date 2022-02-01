@@ -31,7 +31,6 @@ class App : public wxApp
 {
 public:
     virtual bool OnInit();
-    virtual int OnExit();
 
 private:
     MainFrame* frame;

@@ -44,9 +44,6 @@ private:
     Canvas* parentCanvas;
     ShaderManager* shaders;
     TextureManager* textures;
-    VertexBuffer* vertexBuffer;
-    ElementBuffer* elementBuffer;
-    VertexArray* vertexArray;
     Camera* camera;
     std::vector<std::unique_ptr<Object>> objects;
 };
