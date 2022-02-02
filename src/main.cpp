@@ -157,7 +157,10 @@ void MainFrame::onExit(wxCommandEvent&)
 }
 
 
+wxDEFINE_EVENT(RENDER, wxCommandEvent);
+
 wxBEGIN_EVENT_TABLE(Canvas, wxGLCanvas)
+    EVT_COMMAND(wxID_ANY, RENDER, Canvas::onRender)
     EVT_PAINT(Canvas::onPaint)
     EVT_SIZE(Canvas::onSize)
     EVT_LEAVE_WINDOW(Canvas::onLeavingWindow)
@@ -220,6 +223,9 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
     }
 
     graphicsManager = std::make_unique<GraphicsManager>(this);
+
+    // wxCommandEvent renderEvent(RENDER);
+    // wxQueueEvent(this, &renderEvent);
 }
 
 
@@ -266,6 +272,14 @@ bool Canvas::extCheck(std::pair<bool, std::string> in)
         wxMessageBox(msg, "Initialization error", wxOK | wxICON_ERROR, this);
         return false;
     }
+}
+
+
+void Canvas::onRender(wxCommandEvent&)
+{
+    flip();
+    wxCommandEvent renderEvent(RENDER);
+    wxQueueEvent(this, &renderEvent);
 }
 
 

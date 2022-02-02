@@ -22,11 +22,8 @@ GLuint testIndices[] =
 GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
 {
     #ifdef DEBUG
-        if (parentCanvas->getDebuggingExt())
-            {
-                glEnable(GL_DEBUG_OUTPUT);
-                glDebugMessageCallback(oglDebug::GLDebugMessageCallback, NULL);
-            }
+        glEnable(GL_DEBUG_OUTPUT);
+        glDebugMessageCallback(oglDebug::GLDebugMessageCallback, NULL);
     #endif /* DEBUG */
 
     shaders = new ShaderManager(this);

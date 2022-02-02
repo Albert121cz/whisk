@@ -69,7 +69,6 @@ public:
     void addTex(const unsigned char* data, int width, int height);
     float viewportAspectRatio();
     void log(std::string str);
-    bool getDebuggingExt() {return debuggingExt;}
     bool extCheck(std::pair<bool, std::string> in);
     std::pair<bool, wxPoint> getCameraMouseInfo()
         {return std::make_pair(cameraMoving, wxGetMousePosition());}
@@ -83,6 +82,7 @@ private:
     bool cameraMoving = false;
     wxPoint mousePos;
     
+    void onRender(wxCommandEvent&);
     void onPaint(wxPaintEvent&);
     void onSize(wxSizeEvent&);
     void onLeavingWindow(wxMouseEvent&) {cameraMoving = false;}
