@@ -86,37 +86,6 @@ void GraphicsManager::setUniformMatrix(glm::mat4 mat, const char* name)
 }
 
 
-RenderTimer::RenderTimer(MainFrame* parent, int field, Canvas* canvas)
-    : parentFrame(parent), statusBarField(field), renderCanvas(canvas)
-{
-    StartOnce(0);
-    lastTick = std::chrono::steady_clock::now();
-}
-
-
-void RenderTimer::Notify()
-{
-    renderCanvas->flip();
-    StartOnce();
-    calculateFPS();
-
-    // https://stackoverflow.com/a/40766420
-    parentFrame->SetStatusText(
-        wxString::Format(wxT("%.1f FPS"), FPS), statusBarField);
-}
-
-
-void RenderTimer::calculateFPS()
-{
-    std::chrono::steady_clock::time_point currentTick;
-    currentTick = std::chrono::steady_clock::now();
-    int difference = std::chrono::duration_cast<std::chrono::milliseconds>
-        (currentTick - lastTick).count();
-    FPS = (FPS * FPSSmoothing) + (1000/difference * (1.0-FPSSmoothing));
-    lastTick = currentTick;
-}
-
-
 glm::mat4 Camera::viewMatrix()
 {
     toTarget.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));

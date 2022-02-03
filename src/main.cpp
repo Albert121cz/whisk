@@ -68,9 +68,6 @@ MainFrame::MainFrame(const wxString& title,
     {
         wxLogVerbose("The display is supported with default attributes");
         canvas = new Canvas(this, glDefAttrs);
-
-        timer = new RenderTimer(this, 1, canvas);
-        
     }
     else
     {
@@ -79,12 +76,6 @@ MainFrame::MainFrame(const wxString& title,
     }
 
     SetMinSize(wxSize(250, 200));
-}
-
-
-MainFrame::~MainFrame()
-{
-    delete timer;
 }
 
 
@@ -152,7 +143,8 @@ void MainFrame::onAbout(wxCommandEvent&)
 
 void MainFrame::onExit(wxCommandEvent&)
 {
-    timer->Stop(); 
+    // timer->Stop();
+    canvas->done = true; 
     Close(true);
 }
 
@@ -224,8 +216,9 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
 
     graphicsManager = std::make_unique<GraphicsManager>(this);
 
-    // wxCommandEvent renderEvent(RENDER);
-    // wxQueueEvent(this, &renderEvent);
+    renderEvent = new wxCommandEvent(RENDER);
+    lastFlip = std::chrono::steady_clock::now();
+    wxQueueEvent(this, renderEvent);
 }
 
 
@@ -275,11 +268,25 @@ bool Canvas::extCheck(std::pair<bool, std::string> in)
 }
 
 
+// https://stackoverflow.com/a/87333
+// https://stackoverflow.com/a/27739925
 void Canvas::onRender(wxCommandEvent&)
 {
     flip();
-    wxCommandEvent renderEvent(RENDER);
-    wxQueueEvent(this, &renderEvent);
+
+    std::chrono::steady_clock::time_point currentFlip;
+    currentFlip = std::chrono::steady_clock::now();
+    float difference = std::chrono::duration_cast<std::chrono::microseconds>
+        (currentFlip - lastFlip).count();
+    FPS = (FPS * FPSSmoothing) + (1000000/difference * (1.0-FPSSmoothing));
+    lastFlip = currentFlip;
+    parent_ptr->SetStatusText(wxString::Format(wxT("%.1f FPS"), FPS), 1);
+
+    renderEvent = new wxCommandEvent(RENDER);
+    wxGetApp().Yield();
+    if (done)
+        return;
+    wxQueueEvent(this, renderEvent);
 }
 
 

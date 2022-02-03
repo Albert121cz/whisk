@@ -16,6 +16,7 @@
 #include <GL/glew.h>
 #include <memory>
 #include <vector>
+#include <chrono>
 
 #define OGL_MAJOR_VERSION 4
 #define OGL_MINOR_VERSION 6
@@ -40,7 +41,6 @@ class MainFrame : public wxFrame
 {
 public:
     MainFrame(const wxString& title, const wxPoint& pos, const wxSize& size);
-    ~MainFrame();
     bool openGLInitialized();
 
 private:
@@ -62,7 +62,7 @@ class Canvas : public wxGLCanvas
 {
 public:
     Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs);
-    ~Canvas() {delete wxGLCtx;}
+    ~Canvas() {done = true; delete wxGLCtx;}
 
     bool wxGLCtxExists() {return wxGLCtx != NULL;}
     void flip();
@@ -72,6 +72,7 @@ public:
     bool extCheck(std::pair<bool, std::string> in);
     std::pair<bool, wxPoint> getCameraMouseInfo()
         {return std::make_pair(cameraMoving, wxGetMousePosition());}
+    bool done = false;
 
 private:
     MainFrame* parent_ptr;
@@ -81,6 +82,10 @@ private:
     std::pair<int, int> viewportDims;
     bool cameraMoving = false;
     wxPoint mousePos;
+    wxEvent* renderEvent;
+    std::chrono::steady_clock::time_point lastFlip;
+    const float FPSSmoothing = 0.99f;
+    float FPS = 0.0f;
     
     void onRender(wxCommandEvent&);
     void onPaint(wxPaintEvent&);
