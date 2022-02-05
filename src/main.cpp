@@ -86,6 +86,9 @@ bool MainFrame::openGLInitialized()
     
     if (!canvas->wxGLCtxExists())
         return false;
+
+    if (!canvas->graphicsManagerExists())
+        return false;
     
     return true;
 }
@@ -143,8 +146,6 @@ void MainFrame::onAbout(wxCommandEvent&)
 
 void MainFrame::onExit(wxCommandEvent&)
 {
-    // timer->Stop();
-    canvas->done = true; 
     Close(true);
 }
 
@@ -153,6 +154,7 @@ wxDEFINE_EVENT(RENDER, wxCommandEvent);
 
 wxBEGIN_EVENT_TABLE(Canvas, wxGLCanvas)
     EVT_COMMAND(wxID_ANY, RENDER, Canvas::onRender)
+    EVT_CLOSE(Canvas::onExit)
     EVT_PAINT(Canvas::onPaint)
     EVT_SIZE(Canvas::onSize)
     EVT_LEAVE_WINDOW(Canvas::onLeavingWindow)
@@ -206,6 +208,7 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
         #endif /* DEBUG */
         {GLEW_ARB_direct_state_access, "ARB_direct_state_access"},
         {GLEW_ARB_bindless_texture, "ARB_bindless_texture"},
+        {WGLEW_EXT_swap_control, "EXT_swap_control"},
     };
 
     for (auto extension : extensions)
@@ -226,8 +229,8 @@ void Canvas::flip()
 {
     wxClientDC dc(this);
 
-    SwapBuffers();
     graphicsManager->render();
+    SwapBuffers();
 }
 
 
@@ -287,6 +290,12 @@ void Canvas::onRender(wxCommandEvent&)
     if (done)
         return;
     wxQueueEvent(this, renderEvent);
+}
+
+
+void Canvas::onExit(wxCloseEvent&)
+{
+    done = true;
 }
 
 

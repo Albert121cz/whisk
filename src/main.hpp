@@ -12,8 +12,10 @@
 #include <wx/image.h>
 #include <wx/wfstream.h>
 #include <wx/glcanvas.h>
+#include <wx/evtloop.h>
 #include <wx/wx.h>
 #include <GL/glew.h>
+#include <GL/wglew.h>
 #include <memory>
 #include <vector>
 #include <chrono>
@@ -31,7 +33,7 @@ class GraphicsManager;
 class App : public wxApp
 {
 public:
-    virtual bool OnInit();
+    virtual bool OnInit() override;
 
 private:
     MainFrame* frame;
@@ -65,6 +67,7 @@ public:
     ~Canvas() {done = true; delete wxGLCtx;}
 
     bool wxGLCtxExists() {return wxGLCtx != NULL;}
+    bool graphicsManagerExists() {return (graphicsManager) ? true : false;}
     void flip();
     void addTex(const unsigned char* data, int width, int height);
     float viewportAspectRatio();
@@ -77,17 +80,18 @@ public:
 private:
     MainFrame* parent_ptr;
     wxGLContext* wxGLCtx = nullptr;
-    std::unique_ptr<GraphicsManager> graphicsManager;
+    std::unique_ptr<GraphicsManager> graphicsManager = {};
     bool debuggingExt = false;
     std::pair<int, int> viewportDims;
     bool cameraMoving = false;
     wxPoint mousePos;
     wxEvent* renderEvent;
     std::chrono::steady_clock::time_point lastFlip;
-    const float FPSSmoothing = 0.99f;
+    const float FPSSmoothing = 0.9f;
     float FPS = 0.0f;
     
     void onRender(wxCommandEvent&);
+    void onExit(wxCloseEvent&);
     void onPaint(wxPaintEvent&);
     void onSize(wxSizeEvent&);
     void onLeavingWindow(wxMouseEvent&) {cameraMoving = false;}

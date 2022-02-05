@@ -26,6 +26,11 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
         glDebugMessageCallback(oglDebug::GLDebugMessageCallback, NULL);
     #endif /* DEBUG */
 
+    if (WGLEW_EXT_swap_control_tear)
+        wglSwapIntervalEXT(-1);
+    else
+        wglSwapIntervalEXT(1);
+
     shaders = new ShaderManager(this);
     shaders->addShader("default.vert");
     shaders->addShader("default.frag");
