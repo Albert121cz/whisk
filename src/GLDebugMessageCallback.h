@@ -9,7 +9,7 @@
 #define GL_DEBUG_MESSAGE_CALLBACK_H_
 
 #include <GL/glew.h>
-#include <wx/wx.h>
+#include <iostream>
 // #include <GLFW/glfw3.h>
 
 namespace oglDebug

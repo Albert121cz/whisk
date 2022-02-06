@@ -1,4 +1,4 @@
-MAKEFLAGS += -j 4
+MAKEFLAGS += -j 5
 
 CXX := g++ --std=c++17
 CXXFLAGS := -Winvalid-pch -Wall -Wextra

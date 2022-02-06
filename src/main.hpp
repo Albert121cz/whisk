@@ -12,7 +12,7 @@
 #include <wx/image.h>
 #include <wx/wfstream.h>
 #include <wx/glcanvas.h>
-#include <wx/evtloop.h>
+#include <wx/laywin.h>
 #include <wx/wx.h>
 #include <GL/glew.h>
 #include <GL/wglew.h>
@@ -20,13 +20,17 @@
 #include <vector>
 #include <chrono>
 
+// must be defined for wxCheckListBox to work
+#define wxUSE_OWNER_DRAWN 1
+
 #define OGL_MAJOR_VERSION 4
 #define OGL_MINOR_VERSION 6
 
 
 class MainFrame;
+class ObjectPanel;
+class ObjectButtonPanel;
 class Canvas;
-class RenderTimer;
 class GraphicsManager;
 
 
@@ -37,7 +41,10 @@ public:
 
 private:
     MainFrame* frame;
+    ObjectPanel* objectFrame;
+    wxLayoutAlgorithm* layoutAlgorithm;
 };
+
 
 class MainFrame : public wxFrame
 {
@@ -50,15 +57,55 @@ private:
         wxLog* logger;
     #endif /* DEBUG */
     Canvas* canvas;
-    RenderTimer* timer = nullptr;
 
     void onObjLoad(wxCommandEvent&);
     void onTexLoad(wxCommandEvent&);
     void onAbout(wxCommandEvent&);
     void onExit(wxCommandEvent&);
+    void onClose(wxCloseEvent& event);
 
     wxDECLARE_EVENT_TABLE();
 };
+
+
+class ObjectPanel : public wxPanel
+{
+public:
+    ObjectPanel(MainFrame* parent);
+    
+private:
+    ObjectButtonPanel* buttons;
+    wxCheckListBox* listbox;
+
+    void onCheckBox(wxCommandEvent& event);
+
+    wxDECLARE_EVENT_TABLE();
+};
+
+
+class ObjectButtonPanel : public wxPanel
+{
+public:
+    ObjectButtonPanel(wxPanel* parentPanel, wxCheckListBox* target);
+
+private:
+    wxCheckListBox* targetListbox;
+    wxButton* newButton;
+    wxButton* renameButton;
+    wxButton* deleteButton;
+
+    void onNew(wxCommandEvent& event);
+    void onRename(wxCommandEvent& event);
+    void onDelete(wxCommandEvent& event);
+
+    enum buttonEvents
+    {
+        ID_RENAME
+    };
+
+    wxDECLARE_EVENT_TABLE();
+};
+
 
 class Canvas : public wxGLCanvas
 {
@@ -78,7 +125,7 @@ public:
     bool done = false;
 
 private:
-    MainFrame* parent_ptr;
+    MainFrame* parentFrame;
     wxGLContext* wxGLCtx = nullptr;
     std::unique_ptr<GraphicsManager> graphicsManager = {};
     bool debuggingExt = false;
@@ -91,7 +138,7 @@ private:
     float FPS = 0.0f;
     
     void onRender(wxCommandEvent&);
-    void onExit(wxCloseEvent&);
+    void onClose(wxCloseEvent&);
     void onPaint(wxPaintEvent&);
     void onSize(wxSizeEvent&);
     void onLeavingWindow(wxMouseEvent&) {cameraMoving = false;}
@@ -101,6 +148,7 @@ private:
 
     wxDECLARE_EVENT_TABLE();
 };
+
 
 enum Event
 {

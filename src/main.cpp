@@ -13,11 +13,11 @@ bool App::OnInit()
     wxInitAllImageHandlers();
 
     frame = new MainFrame("Hello World", wxPoint(50, 50), wxSize(800, 600));
-    frame->Show(true);
 
     if (!frame->openGLInitialized())
-        return false;
+        return false;    
 
+    frame->Show(true);
     return true;
 }
 
@@ -27,6 +27,7 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_MENU(LOAD_TEX, MainFrame::onTexLoad)
     EVT_MENU(wxID_ABOUT, MainFrame::onAbout)
     EVT_MENU(wxID_EXIT, MainFrame::onExit)
+    EVT_CLOSE(MainFrame::onClose)
 wxEND_EVENT_TABLE()
 
 
@@ -39,8 +40,10 @@ MainFrame::MainFrame(const wxString& title,
         wxLog::SetActiveTarget(logger);
         wxLog::SetVerbose(true);
     #endif /* DEBUG */
+
+    wxBoxSizer* mainSizer = new wxBoxSizer(wxHORIZONTAL);
     
-    wxMenu *menuContextFile = new wxMenu;
+    wxMenu* menuContextFile = new wxMenu;
     menuContextFile->Append(Event::LOAD_OBJ, "&Load object...\tCtrl-O",
         "Load OBJ file");
     menuContextFile->Append(Event::LOAD_TEX, "&Load texture...\tCtrl-T",
@@ -48,10 +51,10 @@ MainFrame::MainFrame(const wxString& title,
     menuContextFile->AppendSeparator();
     menuContextFile->Append(wxID_EXIT);
 
-    wxMenu *menuContextHelp = new wxMenu;
+    wxMenu* menuContextHelp = new wxMenu;
     menuContextHelp->Append(wxID_ABOUT);
 
-    wxMenuBar *menuBar = new wxMenuBar;
+    wxMenuBar* menuBar = new wxMenuBar;
     menuBar->Append(menuContextFile, "&File");
     menuBar->Append(menuContextHelp, "&Help");
 
@@ -67,7 +70,12 @@ MainFrame::MainFrame(const wxString& title,
     if (supported)
     {
         wxLogVerbose("The display is supported with default attributes");
+
         canvas = new Canvas(this, glDefAttrs);
+        mainSizer->Add(canvas, 1, wxEXPAND);
+
+        ObjectPanel* objects = new ObjectPanel(this);
+        mainSizer->Add(objects, 0, wxEXPAND);
     }
     else
     {
@@ -75,7 +83,8 @@ MainFrame::MainFrame(const wxString& title,
         canvas = NULL;
     }
 
-    SetMinSize(wxSize(250, 200));
+    SetMinSize(wxSize(800, 600));
+    SetSizer(mainSizer);
 }
 
 
@@ -140,13 +149,104 @@ void MainFrame::onTexLoad(wxCommandEvent&)
 void MainFrame::onAbout(wxCommandEvent&)
 {
     wxMessageBox("This is NOT a wxWidgets' Hello world sample",
-                 "About Hello World", wxOK | wxICON_INFORMATION );
+                 "About Hello World", wxOK | wxICON_INFORMATION);
 }
 
 
 void MainFrame::onExit(wxCommandEvent&)
 {
-    Close(true);
+    Close();
+}
+
+
+// https://docs.wxwidgets.org/3.0/classwx_close_event.html
+void MainFrame::onClose(wxCloseEvent& event)
+{
+    if (event.CanVeto())
+    {
+
+        if (wxMessageBox("Do you wish to close the app?", "Quit confirmation",
+            wxICON_QUESTION | wxYES_NO) == wxYES)
+            Destroy();
+        else
+            event.Veto();
+    }
+}
+
+
+wxBEGIN_EVENT_TABLE(ObjectPanel, wxPanel)
+    EVT_CHECKLISTBOX(wxID_ANY, ObjectPanel::onCheckBox)
+wxEND_EVENT_TABLE()
+
+
+// https://zetcode.com/gui/wxwidgets/widgetsII/
+ObjectPanel::ObjectPanel(MainFrame* parent)
+    : wxPanel(parent, wxID_ANY)
+{
+    wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
+
+    listbox = new wxCheckListBox(this, wxID_ANY);
+    sizer->Add(listbox, 4, wxEXPAND | wxALL, 5);
+
+    buttons = new ObjectButtonPanel(this, listbox);
+    sizer->Add(buttons, 1, wxEXPAND | wxRIGHT, 5);
+
+    SetMaxSize(wxSize(250, -1));
+    SetSizer(sizer);
+}
+
+
+void ObjectPanel::onCheckBox(wxCommandEvent& event)
+{
+    int itemIndex = event.GetInt();
+    // TODO: add object to object array in graphics manager
+}
+
+
+wxBEGIN_EVENT_TABLE(ObjectButtonPanel, wxPanel)
+    EVT_BUTTON(wxID_NEW, ObjectButtonPanel::onNew)
+    EVT_BUTTON(ID_RENAME, ObjectButtonPanel::onRename)
+    EVT_BUTTON(wxID_DELETE, ObjectButtonPanel::onDelete)
+wxEND_EVENT_TABLE()
+
+
+ObjectButtonPanel::ObjectButtonPanel(wxPanel* parentPanel, wxCheckListBox* target)
+    : wxPanel(parentPanel, wxID_ANY)
+{
+    targetListbox = target;
+    wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
+    
+    wxStaticText* label = new wxStaticText(this, wxID_ANY, wxT("Objects"));
+    sizer->Add(label);
+
+    newButton = new wxButton(this, wxID_NEW, wxT("New"));
+    sizer->Add(newButton, 0, wxTOP, 5);
+
+    renameButton = new wxButton(this, ID_RENAME, wxT("Rename"));
+    sizer->Add(renameButton, 0, wxTOP, 5);
+    
+    deleteButton = new wxButton(this, wxID_DELETE, wxT("Delete"));
+    sizer->Add(deleteButton, 0, wxTOP, 5);
+
+    SetSizer(sizer);
+}
+
+
+void ObjectButtonPanel::onNew(wxCommandEvent& event)
+{
+    // TODO: interface with GraphicsManager
+}
+
+
+void ObjectButtonPanel::onRename(wxCommandEvent& event)
+{
+    // TODO: interface with GraphicsManager
+}
+
+
+void ObjectButtonPanel::onDelete(wxCommandEvent& event)
+{
+    // TODO: interface with GraphicsManager
 }
 
 
@@ -154,7 +254,7 @@ wxDEFINE_EVENT(RENDER, wxCommandEvent);
 
 wxBEGIN_EVENT_TABLE(Canvas, wxGLCanvas)
     EVT_COMMAND(wxID_ANY, RENDER, Canvas::onRender)
-    EVT_CLOSE(Canvas::onExit)
+    EVT_CLOSE(Canvas::onClose)
     EVT_PAINT(Canvas::onPaint)
     EVT_SIZE(Canvas::onSize)
     EVT_LEAVE_WINDOW(Canvas::onLeavingWindow)
@@ -165,7 +265,7 @@ wxEND_EVENT_TABLE()
 
 // https://github.com/wxWidgets/wxWidgets/tree/master/samples/opengl/pyramid
 Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
-      : wxGLCanvas(parent, canvasAttrs), parent_ptr(parent)
+      : wxGLCanvas(parent, canvasAttrs), parentFrame(parent)
 {
     wxGLContextAttrs ctxAttrs;
     ctxAttrs.PlatformDefaults().OGLVersion(OGL_MAJOR_VERSION,
@@ -283,17 +383,19 @@ void Canvas::onRender(wxCommandEvent&)
         (currentFlip - lastFlip).count();
     FPS = (FPS * FPSSmoothing) + (1000000/difference * (1.0-FPSSmoothing));
     lastFlip = currentFlip;
-    parent_ptr->SetStatusText(wxString::Format(wxT("%.1f FPS"), FPS), 1);
+    parentFrame->SetStatusText(wxString::Format(wxT("%.1f FPS"), FPS), 1);
 
-    renderEvent = new wxCommandEvent(RENDER);
     wxGetApp().Yield();
+
     if (done)
         return;
+
+    renderEvent = new wxCommandEvent(RENDER);
     wxQueueEvent(this, renderEvent);
 }
 
 
-void Canvas::onExit(wxCloseEvent&)
+void Canvas::onClose(wxCloseEvent&)
 {
     done = true;
 }

@@ -69,13 +69,15 @@ Texture::Texture(GraphicsManager* parent, const unsigned char* imageData,
 
 
 Object::Object(GraphicsManager* parent, TextureManager* textures,
-        GLfloat* vert, size_t vertSize, GLuint* indices, size_t indSize)
-    : parentManager(parent), texManager(textures), 
-    verticesLen(vertSize/sizeof(GLfloat)), indicesLen(indSize/sizeof(GLuint))
+    std::string name, GLfloat* vert, size_t vertSize, GLuint* indices,
+    size_t indSize)
+    : parentManager(parent), texManager(textures), objectName(name),
+    indicesLen(indSize/sizeof(GLuint))
 {
 // combined array includes position of vertices (x, y, z), colors of vertices
 // without texture (r, g, b), position of vertices in texture (s, t)
-    combinedLen = (verticesLen / 3) * 8;
+    int verticesLen = vertSize/sizeof(GLfloat);
+    int combinedLen = (verticesLen / 3) * 8;
     combinedData = new GLfloat[combinedLen];
     
     for (int vertex = 0; vertex < verticesLen / 3; vertex++)
@@ -102,6 +104,7 @@ Object::Object(GraphicsManager* parent, TextureManager* textures,
 
 Object::~Object()
 {
+    delete[] combinedData;
     delete vertexArray;
     delete vertexBuffer;
     delete elementBuffer;

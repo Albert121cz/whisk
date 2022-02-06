@@ -40,8 +40,8 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
 
     camera = new Camera();
 
-    objects.push_back(std::make_unique<Object>(this, textures, testVertices,
-        sizeof(testVertices), testIndices, sizeof(testIndices)));
+    objects.push_back(std::make_unique<Object>(this, textures, "Plane",
+        testVertices, sizeof(testVertices), testIndices, sizeof(testIndices)));
 }
 
 
@@ -76,12 +76,12 @@ void GraphicsManager::render()
 }
 
 
-void GraphicsManager::sendToLog(std::string message)
-{
-    #ifdef DEBUG
+#ifdef DEBUG
+    void GraphicsManager::sendToLog(std::string message)
+    {
         parentCanvas->log(message);
-    #endif /* DEBUG */
-}
+    }
+#endif /* DEBUG */
 
 
 void GraphicsManager::setUniformMatrix(glm::mat4 mat, const char* name)

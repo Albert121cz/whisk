@@ -52,8 +52,8 @@ namespace oglDebug
 {
 
     // Callback function for printing debug statements
-    void GLAPIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
-        GLenum severity, GLsizei, const GLchar* msg, const void*)
+    void GLAPIENTRY GLDebugMessageCallback(GLenum source, GLenum type,
+        GLuint id, GLenum severity, GLsizei, const GLchar* msg, const void*)
     {
         const char* _source;
         const char* _type;
@@ -150,8 +150,9 @@ namespace oglDebug
         // note: __debugbreak is specific for MSVC, won't work with gcc/clang
         // -> in that case remove it and manually set breakpoints
         // if (_severity != "NOTIFICATION") {
-        wxLogVerbose("OpenGL msg [%d]: %s of %s severity, raised from %s: %s\n",
-            id, _type, _severity, _source, msg);
+        std::cout << "Opengl msg [" << id << "]: " << _type << " of "
+            << _severity << " severity, raised from " << _source << ": " << msg
+            << std::endl;
     // #ifdef _DEBUG
     //         __debugbreak();
     // #endif

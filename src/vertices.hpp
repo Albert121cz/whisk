@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <vector>
+#include <string>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 
@@ -89,7 +90,7 @@ private:
 class Object
 {
 public:
-    Object(GraphicsManager* parent, TextureManager* textures,
+    Object(GraphicsManager* parent, TextureManager* textures, std::string name,
         GLfloat* vert, size_t vertSize, GLuint* indices, size_t indSize);
     ~Object();
     void setColor(GLfloat r, GLfloat g, GLfloat b) 
@@ -105,11 +106,9 @@ private:
     ElementBuffer* elementBuffer;
     VertexArray* vertexArray;
     std::shared_ptr<Texture> tex;
+    std::string objectName;
 
-    // TODO: check - these values might be redundant
-    int verticesLen;
     int indicesLen;
-    int combinedLen;
     GLfloat* combinedData;
 
     GLuint64 texHandle;
