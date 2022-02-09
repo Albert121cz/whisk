@@ -57,7 +57,9 @@ private:
         wxLog* logger;
     #endif /* DEBUG */
     Canvas* canvas;
+    ObjectPanel* objects;
 
+    void onRefreshLists(wxCommandEvent&);
     void onObjLoad(wxCommandEvent&);
     void onTexLoad(wxCommandEvent&);
     void onAbout(wxCommandEvent&);
@@ -71,12 +73,15 @@ private:
 class ObjectPanel : public wxPanel
 {
 public:
-    ObjectPanel(MainFrame* parent);
+    ObjectPanel(MainFrame* parent, std::shared_ptr<GraphicsManager> manager);
     
 private:
+    std::shared_ptr<GraphicsManager> graphicsManager;
     ObjectButtonPanel* buttons;
     wxCheckListBox* listbox;
+    std::vector<std::string> names;
 
+    void onRefreshLists(wxCommandEvent&);
     void onCheckBox(wxCommandEvent& event);
 
     wxDECLARE_EVENT_TABLE();
@@ -120,14 +125,17 @@ public:
     float viewportAspectRatio();
     void log(std::string str);
     bool extCheck(std::pair<bool, std::string> in);
+    std::shared_ptr<GraphicsManager> getGraphicsManager()
+        {return graphicsManager;}
     std::pair<bool, wxPoint> getCameraMouseInfo()
         {return std::make_pair(cameraMoving, wxGetMousePosition());}
+    
     bool done = false;
 
 private:
     MainFrame* parentFrame;
     wxGLContext* wxGLCtx = nullptr;
-    std::unique_ptr<GraphicsManager> graphicsManager = {};
+    std::shared_ptr<GraphicsManager> graphicsManager = {};
     bool debuggingExt = false;
     std::pair<int, int> viewportDims;
     bool cameraMoving = false;

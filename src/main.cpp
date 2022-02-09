@@ -22,7 +22,10 @@ bool App::OnInit()
 }
 
 
+wxDEFINE_EVENT(REFRESH_LISTS, wxCommandEvent);
+
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
+    EVT_COMMAND(wxID_ANY, REFRESH_LISTS, MainFrame::onRefreshLists)
     EVT_MENU(LOAD_OBJ, MainFrame::onObjLoad)
     EVT_MENU(LOAD_TEX, MainFrame::onTexLoad)
     EVT_MENU(wxID_ABOUT, MainFrame::onAbout)
@@ -74,7 +77,7 @@ MainFrame::MainFrame(const wxString& title,
         canvas = new Canvas(this, glDefAttrs);
         mainSizer->Add(canvas, 1, wxEXPAND);
 
-        ObjectPanel* objects = new ObjectPanel(this);
+        objects = new ObjectPanel(this, canvas->getGraphicsManager());
         mainSizer->Add(objects, 0, wxEXPAND);
     }
     else
@@ -100,6 +103,13 @@ bool MainFrame::openGLInitialized()
         return false;
     
     return true;
+}
+
+
+void MainFrame::onRefreshLists(wxCommandEvent&)
+{
+    wxEvent* event = new wxCommandEvent(REFRESH_LISTS);
+    wxQueueEvent(objects, event);
 }
 
 
@@ -175,13 +185,15 @@ void MainFrame::onClose(wxCloseEvent& event)
 
 
 wxBEGIN_EVENT_TABLE(ObjectPanel, wxPanel)
+    EVT_COMMAND(wxID_ANY, REFRESH_LISTS, ObjectPanel::onRefreshLists)
     EVT_CHECKLISTBOX(wxID_ANY, ObjectPanel::onCheckBox)
 wxEND_EVENT_TABLE()
 
 
 // https://zetcode.com/gui/wxwidgets/widgetsII/
-ObjectPanel::ObjectPanel(MainFrame* parent)
-    : wxPanel(parent, wxID_ANY)
+ObjectPanel::ObjectPanel(MainFrame* parent, 
+    std::shared_ptr<GraphicsManager> manager)
+    : graphicsManager(manager), wxPanel(parent, wxID_ANY)
 {
     wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 
@@ -196,10 +208,16 @@ ObjectPanel::ObjectPanel(MainFrame* parent)
 }
 
 
+void ObjectPanel::onRefreshLists(wxCommandEvent&)
+{
+    names = graphicsManager->getObjectNames();
+}
+
+
 void ObjectPanel::onCheckBox(wxCommandEvent& event)
 {
-    int itemIndex = event.GetInt();
-    // TODO: add object to object array in graphics manager
+    int itemIdx = event.GetInt();
+    graphicsManager->showOrHideObject(itemIdx);
 }
 
 
@@ -317,7 +335,7 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
             return;
     }
 
-    graphicsManager = std::make_unique<GraphicsManager>(this);
+    graphicsManager = std::make_shared<GraphicsManager>(this);
 
     renderEvent = new wxCommandEvent(RENDER);
     lastFlip = std::chrono::steady_clock::now();
@@ -385,6 +403,10 @@ void Canvas::onRender(wxCommandEvent&)
     lastFlip = currentFlip;
     parentFrame->SetStatusText(wxString::Format(wxT("%.1f FPS"), FPS), 1);
 
+    wxEvent* refreshEvent = new wxCommandEvent(REFRESH_LISTS);
+    wxQueueEvent(parentFrame, refreshEvent);
+
+    // give control back to the app to handle all UI elements and events
     wxGetApp().Yield();
 
     if (done)
@@ -421,7 +443,6 @@ void Canvas::onSize(wxSizeEvent&)
 }
 
 
-// BUG: it is possible to leave the window with the camera still moving
 void Canvas::onRMBDown(wxMouseEvent&)
 {
     cameraMoving = true;

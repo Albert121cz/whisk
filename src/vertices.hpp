@@ -90,6 +90,9 @@ private:
 class Object
 {
 public:
+    bool show = false;
+    std::string objectName;
+
     Object(GraphicsManager* parent, TextureManager* textures, std::string name,
         GLfloat* vert, size_t vertSize, GLuint* indices, size_t indSize);
     ~Object();
@@ -106,7 +109,6 @@ private:
     ElementBuffer* elementBuffer;
     VertexArray* vertexArray;
     std::shared_ptr<Texture> tex;
-    std::string objectName;
 
     int indicesLen;
     GLfloat* combinedData;

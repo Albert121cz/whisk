@@ -69,10 +69,12 @@ void GraphicsManager::render()
     camera->move(parentCanvas->getCameraMouseInfo());
 
     setUniformMatrix(camera->viewMatrix(), "view");
-    setUniformMatrix(camera->projectionMatrix(parentCanvas->viewportAspectRatio()), "projection");
+    setUniformMatrix(camera->projectionMatrix(
+        parentCanvas->viewportAspectRatio()), "projection");
 
     for (auto it = objects.begin(); it != objects.end(); it++)
-        (*it)->draw();
+        if ((*it)->show)
+            (*it)->draw();
 }
 
 
@@ -88,6 +90,81 @@ void GraphicsManager::setUniformMatrix(glm::mat4 mat, const char* name)
 {
     int location = glGetUniformLocation(shaders->getID(), name);
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat));
+}
+
+
+void GraphicsManager::addObject(std::string name, GLfloat vert, size_t vertSize,
+    GLuint ind, size_t indSize)
+{
+    objects.push_back(std::make_unique<Object>(this, textures, name,
+        vert, vertSize, ind, indSize));
+    
+    #ifdef DEBUG
+        std::ostringstream messageStream;
+        messageStream << "Object added: " << name;
+        sendToLog(messageStream.str());
+    #endif /* DEBUG */
+}
+
+
+void GraphicsManager::renameObject(int idx, std::string newName)
+{
+    #ifdef DEBUG
+        std::ostringstream messageStream;
+        messageStream << "Object name changed: " << objects[idx]->objectName
+            << " -> " << newName;
+        sendToLog(messageStream.str());
+    #endif /* DEBUG */
+
+    objects[idx]->objectName = newName;
+}
+
+
+void GraphicsManager::deleteObject(int idx)
+{
+    #ifdef DEBUG
+    std::ostringstream messageStream;
+    messageStream << "Object deleted: " << objects[idx]->objectName;
+    sendToLog(messageStream.str());
+    #endif /* DEBUG */
+
+    objects.erase(objects.begin() + idx);
+}
+
+
+void GraphicsManager::showOrHideObject(int idx)
+{
+    if (objects[idx]->show)
+    {
+        objects[idx]->show = false;
+
+        #ifdef DEBUG
+            std::ostringstream messageStream;
+            messageStream << "Object hid: " << objects[idx]->objectName;
+            sendToLog(messageStream.str());
+        #endif /* DEBUG */
+    }
+    else
+    {
+        objects[idx]->show = true;
+
+        #ifdef DEBUG
+            std::ostringstream messageStream;
+            messageStream << "Object showed: " << objects[idx]->objectName;
+            sendToLog(messageStream.str());
+        #endif /* DEBUG */
+    }
+}
+
+
+std::vector<std::string> GraphicsManager::getObjectNames()
+{
+    std::vector<std::string> names;
+
+    for (auto it = objects.begin(); it != objects.end(); it++)
+        names.push_back((*it)->objectName);
+    
+    return names;
 }
 
 

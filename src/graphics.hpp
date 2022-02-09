@@ -34,11 +34,17 @@ public:
     GraphicsManager(Canvas* parent);
     ~GraphicsManager();
 
-    TextureManager* getTexManagerPtr() { return textures;}
+    TextureManager* getTexManagerPtr() {return textures;}
     GLuint getShadersID();
     void render();
     void sendToLog(std::string message);
     void setUniformMatrix(glm::mat4 mat, const char* name);
+    void addObject(std::string name, GLfloat vert, size_t vertSize,
+        GLuint ind, size_t indSize);
+    void renameObject(int idx, std::string newName);
+    void deleteObject(int idx);
+    void showOrHideObject(int idx);
+    std::vector<std::string> getObjectNames();
 
 private:
     Canvas* parentCanvas;
