@@ -22,10 +22,7 @@ bool App::OnInit()
 }
 
 
-wxDEFINE_EVENT(REFRESH_LISTS, wxCommandEvent);
-
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
-    EVT_COMMAND(wxID_ANY, REFRESH_LISTS, MainFrame::onRefreshLists)
     EVT_MENU(LOAD_OBJ, MainFrame::onObjLoad)
     EVT_MENU(LOAD_TEX, MainFrame::onTexLoad)
     EVT_MENU(wxID_ABOUT, MainFrame::onAbout)
@@ -106,13 +103,6 @@ bool MainFrame::openGLInitialized()
 }
 
 
-void MainFrame::onRefreshLists(wxCommandEvent&)
-{
-    wxEvent* event = new wxCommandEvent(REFRESH_LISTS);
-    wxQueueEvent(objects, event);
-}
-
-
 void MainFrame::onObjLoad(wxCommandEvent&)
 {
     wxFileDialog loadFileDialog(this, _("Load OBJ file"), "", "", 
@@ -185,7 +175,6 @@ void MainFrame::onClose(wxCloseEvent& event)
 
 
 wxBEGIN_EVENT_TABLE(ObjectPanel, wxPanel)
-    EVT_COMMAND(wxID_ANY, REFRESH_LISTS, ObjectPanel::onRefreshLists)
     EVT_CHECKLISTBOX(wxID_ANY, ObjectPanel::onCheckBox)
 wxEND_EVENT_TABLE()
 
@@ -193,24 +182,54 @@ wxEND_EVENT_TABLE()
 // https://zetcode.com/gui/wxwidgets/widgetsII/
 ObjectPanel::ObjectPanel(MainFrame* parent, 
     std::shared_ptr<GraphicsManager> manager)
-    : graphicsManager(manager), wxPanel(parent, wxID_ANY)
+    : wxPanel(parent, wxID_ANY), graphicsManager(manager)
 {
     wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 
     listbox = new wxCheckListBox(this, wxID_ANY);
     sizer->Add(listbox, 4, wxEXPAND | wxALL, 5);
 
-    buttons = new ObjectButtonPanel(this, listbox);
+    buttons = new ObjectButtonPanel(graphicsManager, this, listbox);
     sizer->Add(buttons, 1, wxEXPAND | wxRIGHT, 5);
 
     SetMaxSize(wxSize(250, -1));
     SetSizer(sizer);
+
+    timer = new ListRefreshTimer(graphicsManager, listbox);
 }
 
 
-void ObjectPanel::onRefreshLists(wxCommandEvent&)
+ObjectPanel::~ObjectPanel()
 {
-    names = graphicsManager->getObjectNames();
+    delete timer;
+}
+
+
+ListRefreshTimer::ListRefreshTimer(std::shared_ptr<GraphicsManager> manager,
+    wxCheckListBox* list)
+    : graphicsManager(manager), listbox(list)
+{
+    StartOnce(250);
+}
+
+
+void ListRefreshTimer::Notify()
+{
+    std::vector<std::string> newNames = graphicsManager->getObjectNames();
+
+    for (size_t i = 0; i < newNames.size(); i++)
+    {
+        if (i >= names.GetCount() || newNames[i] != names[i])
+        {
+            names.Insert(newNames[i], i);
+            listbox->InsertItems(1, &names[i], i);
+        }
+
+        if (graphicsManager->getObjectShow(i) && !listbox->IsChecked(i))
+            listbox->Check(i);
+    }
+    
+    StartOnce();
 }
 
 
@@ -224,12 +243,14 @@ void ObjectPanel::onCheckBox(wxCommandEvent& event)
 wxBEGIN_EVENT_TABLE(ObjectButtonPanel, wxPanel)
     EVT_BUTTON(wxID_NEW, ObjectButtonPanel::onNew)
     EVT_BUTTON(ID_RENAME, ObjectButtonPanel::onRename)
+    EVT_BUTTON(ID_DUPLICATE, ObjectButtonPanel::onDuplicate)
     EVT_BUTTON(wxID_DELETE, ObjectButtonPanel::onDelete)
 wxEND_EVENT_TABLE()
 
 
-ObjectButtonPanel::ObjectButtonPanel(wxPanel* parentPanel, wxCheckListBox* target)
-    : wxPanel(parentPanel, wxID_ANY)
+ObjectButtonPanel::ObjectButtonPanel(std::shared_ptr<GraphicsManager> manager,
+    wxPanel* parentPanel, wxCheckListBox* target)
+    : wxPanel(parentPanel, wxID_ANY), graphicsManager(manager)
 {
     targetListbox = target;
     wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
@@ -242,6 +263,9 @@ ObjectButtonPanel::ObjectButtonPanel(wxPanel* parentPanel, wxCheckListBox* targe
 
     renameButton = new wxButton(this, ID_RENAME, wxT("Rename"));
     sizer->Add(renameButton, 0, wxTOP, 5);
+
+    duplicateButton = new wxButton(this, ID_DUPLICATE, wxT("Duplicate"));
+    sizer->Add(duplicateButton, 0, wxTOP, 5);
     
     deleteButton = new wxButton(this, wxID_DELETE, wxT("Delete"));
     sizer->Add(deleteButton, 0, wxTOP, 5);
@@ -250,19 +274,27 @@ ObjectButtonPanel::ObjectButtonPanel(wxPanel* parentPanel, wxCheckListBox* targe
 }
 
 
-void ObjectButtonPanel::onNew(wxCommandEvent& event)
+void ObjectButtonPanel::onNew(wxCommandEvent&)
 {
     // TODO: interface with GraphicsManager
 }
 
 
-void ObjectButtonPanel::onRename(wxCommandEvent& event)
+void ObjectButtonPanel::onRename(wxCommandEvent&)
 {
     // TODO: interface with GraphicsManager
 }
 
 
-void ObjectButtonPanel::onDelete(wxCommandEvent& event)
+void ObjectButtonPanel::onDuplicate(wxCommandEvent&)
+{
+    int idx = targetListbox->GetSelection();
+    if (idx != wxNOT_FOUND)
+        graphicsManager->duplicateObject(idx);
+}
+
+
+void ObjectButtonPanel::onDelete(wxCommandEvent&)
 {
     // TODO: interface with GraphicsManager
 }
@@ -402,9 +434,6 @@ void Canvas::onRender(wxCommandEvent&)
     FPS = (FPS * FPSSmoothing) + (1000000/difference * (1.0-FPSSmoothing));
     lastFlip = currentFlip;
     parentFrame->SetStatusText(wxString::Format(wxT("%.1f FPS"), FPS), 1);
-
-    wxEvent* refreshEvent = new wxCommandEvent(REFRESH_LISTS);
-    wxQueueEvent(parentFrame, refreshEvent);
 
     // give control back to the app to handle all UI elements and events
     wxGetApp().Yield();

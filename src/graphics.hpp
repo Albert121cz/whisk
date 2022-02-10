@@ -39,11 +39,13 @@ public:
     void render();
     void sendToLog(std::string message);
     void setUniformMatrix(glm::mat4 mat, const char* name);
-    void addObject(std::string name, GLfloat vert, size_t vertSize,
-        GLuint ind, size_t indSize);
+    void addObject(std::string name, GLfloat* vert, size_t vertSize,
+        GLuint* ind, size_t indSize);
     void renameObject(int idx, std::string newName);
+    void duplicateObject(int idx);
     void deleteObject(int idx);
     void showOrHideObject(int idx);
+    bool getObjectShow(int idx);
     std::vector<std::string> getObjectNames();
 
 private:

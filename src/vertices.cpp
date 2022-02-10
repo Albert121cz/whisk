@@ -2,8 +2,35 @@
 
 
 template <typename T>
+Buffer<T>::Buffer(const Buffer& old)
+{
+    
+    parentManager = old.parentManager;
+    bufferType = old.bufferType;
+    dataStoredSize = old.dataStoredSize;
+    dataStored = new T[dataStoredSize];
+
+    for (GLsizei i = 0; i < dataStoredSize; i++)
+        dataStored[i] = old.dataStored[i];
+
+    glCreateBuffers(1, &ID);
+    glNamedBufferData(ID, dataStoredSize*sizeof(T), dataStored, GL_STATIC_DRAW);
+}
+
+
+template <typename T>
 void Buffer<T>::sendData(T* data, GLsizei size)
 {
+    // data is stored inside the object for copying
+    if (dataStoredSize != 0)
+        delete dataStored;
+
+    dataStoredSize = size / sizeof(T);
+    dataStored = new T[dataStoredSize];
+
+    for (GLsizei i = 0; i < dataStoredSize; i++)
+        dataStored[i] = data[i];
+
     glNamedBufferData(ID, size, data, GL_STATIC_DRAW);
 }
 
@@ -71,13 +98,13 @@ Texture::Texture(GraphicsManager* parent, const unsigned char* imageData,
 Object::Object(GraphicsManager* parent, TextureManager* textures,
     std::string name, GLfloat* vert, size_t vertSize, GLuint* indices,
     size_t indSize)
-    : parentManager(parent), texManager(textures), objectName(name),
+    :  objectName(name), parentManager(parent), texManager(textures),
     indicesLen(indSize/sizeof(GLuint))
 {
 // combined array includes position of vertices (x, y, z), colors of vertices
 // without texture (r, g, b), position of vertices in texture (s, t)
     int verticesLen = vertSize/sizeof(GLfloat);
-    int combinedLen = (verticesLen / 3) * 8;
+    combinedLen = (verticesLen / 3) * 8;
     combinedData = new GLfloat[combinedLen];
     
     for (int vertex = 0; vertex < verticesLen / 3; vertex++)
@@ -86,7 +113,7 @@ Object::Object(GraphicsManager* parent, TextureManager* textures,
             combinedData[vertex * 8 + coord] = vert[vertex * 3 + coord];
 
         for (size_t clr = 0; clr < 3; clr++)
-            combinedData[vertex * 8 + clr + 3] = color[clr];
+            combinedData[vertex * 8 + 3 + clr] = color[clr];
     }
 
     vertexBuffer = new VertexBuffer(parentManager);
@@ -104,10 +131,42 @@ Object::Object(GraphicsManager* parent, TextureManager* textures,
 
 Object::~Object()
 {
-    delete[] combinedData;
+    delete[] combinedData;   
     delete vertexArray;
     delete vertexBuffer;
     delete elementBuffer;
+}
+
+
+Object::Object(const Object& old)
+{
+    show = old.show;
+    // TODO: add number to name
+    objectName = old.objectName;
+
+    parentManager = old.parentManager;
+    texManager = old.texManager;
+    tex = old.tex;
+
+    indicesLen = old.indicesLen;
+    combinedLen = old.combinedLen;
+    combinedData = new GLfloat[combinedLen];
+    for (int i = 0; i < combinedLen; i++)
+        combinedData[i] = old.combinedData[i];
+
+    for (int i = 0; i < 3; i++)
+        color[i] = old.color[i];
+    position = old.position;
+    rotation = old.rotation;
+    size = old.size;
+
+    vertexBuffer = new VertexBuffer(*old.vertexBuffer);
+    elementBuffer = new ElementBuffer(*old.elementBuffer);
+
+    vertexArray = new VertexArray(parentManager);
+    vertexArray->link(vertexBuffer);
+    vertexArray->link(elementBuffer);
+    vertexArray->enable();
 }
 
 

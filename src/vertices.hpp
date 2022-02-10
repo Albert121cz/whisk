@@ -18,9 +18,10 @@ template <typename T>
 class Buffer
 {
 public:
-    Buffer(GraphicsManager* parent, const GLenum type) 
+    Buffer(GraphicsManager* parent, GLenum type) 
         : parentManager(parent), bufferType(type) {glCreateBuffers(1, &ID);}
-    ~Buffer() {glDeleteBuffers(1, &ID);}
+    Buffer(const Buffer& old);
+    ~Buffer() {glDeleteBuffers(1, &ID); delete[] dataStored;}
 
     void sendData(T* data, GLsizei size);
     GLenum getType() {return bufferType;}
@@ -29,7 +30,9 @@ public:
 protected:
     GLuint ID;
     GraphicsManager* parentManager;
-    const GLenum bufferType;
+    GLenum bufferType;
+    T* dataStored;
+    GLsizei dataStoredSize = 0;
 };
 
 class VertexBuffer : public Buffer<GLfloat>
@@ -90,12 +93,14 @@ private:
 class Object
 {
 public:
-    bool show = false;
+    bool show = true;
     std::string objectName;
 
     Object(GraphicsManager* parent, TextureManager* textures, std::string name,
         GLfloat* vert, size_t vertSize, GLuint* indices, size_t indSize);
     ~Object();
+    Object(const Object& oldObject);
+
     void setColor(GLfloat r, GLfloat g, GLfloat b) 
         {color[0] = r; color[1] = g; color[2] = b;}
     // TODO: link texture with object - needs texture menu (wxListBox)
@@ -111,6 +116,7 @@ private:
     std::shared_ptr<Texture> tex;
 
     int indicesLen;
+    int combinedLen;
     GLfloat* combinedData;
 
     GLuint64 texHandle;

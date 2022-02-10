@@ -93,8 +93,8 @@ void GraphicsManager::setUniformMatrix(glm::mat4 mat, const char* name)
 }
 
 
-void GraphicsManager::addObject(std::string name, GLfloat vert, size_t vertSize,
-    GLuint ind, size_t indSize)
+void GraphicsManager::addObject(std::string name, GLfloat* vert, size_t vertSize,
+    GLuint* ind, size_t indSize)
 {
     objects.push_back(std::make_unique<Object>(this, textures, name,
         vert, vertSize, ind, indSize));
@@ -120,12 +120,27 @@ void GraphicsManager::renameObject(int idx, std::string newName)
 }
 
 
+void GraphicsManager::duplicateObject(int idx)
+{
+    int newObjectIdx = idx + 1;
+    
+    objects.insert(objects.begin() + newObjectIdx,
+        std::make_unique<Object>(*objects[idx]));
+    
+    #ifdef DEBUG
+        std::ostringstream messageStream;
+        messageStream << "Object duplicated: " << objects[idx]->objectName;
+        sendToLog(messageStream.str());
+    #endif /* DEBUG */
+}
+
+
 void GraphicsManager::deleteObject(int idx)
 {
     #ifdef DEBUG
-    std::ostringstream messageStream;
-    messageStream << "Object deleted: " << objects[idx]->objectName;
-    sendToLog(messageStream.str());
+        std::ostringstream messageStream;
+        messageStream << "Object deleted: " << objects[idx]->objectName;
+        sendToLog(messageStream.str());
     #endif /* DEBUG */
 
     objects.erase(objects.begin() + idx);
@@ -154,6 +169,12 @@ void GraphicsManager::showOrHideObject(int idx)
             sendToLog(messageStream.str());
         #endif /* DEBUG */
     }
+}
+
+
+bool GraphicsManager::getObjectShow(int idx)
+{
+    return objects[idx]->show;
 }
 
 

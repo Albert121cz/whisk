@@ -32,6 +32,7 @@ class ObjectPanel;
 class ObjectButtonPanel;
 class Canvas;
 class GraphicsManager;
+class ListRefreshTimer;
 
 
 class App : public wxApp
@@ -59,7 +60,6 @@ private:
     Canvas* canvas;
     ObjectPanel* objects;
 
-    void onRefreshLists(wxCommandEvent&);
     void onObjLoad(wxCommandEvent&);
     void onTexLoad(wxCommandEvent&);
     void onAbout(wxCommandEvent&);
@@ -74,38 +74,58 @@ class ObjectPanel : public wxPanel
 {
 public:
     ObjectPanel(MainFrame* parent, std::shared_ptr<GraphicsManager> manager);
+    ~ObjectPanel();
     
 private:
     std::shared_ptr<GraphicsManager> graphicsManager;
     ObjectButtonPanel* buttons;
     wxCheckListBox* listbox;
-    std::vector<std::string> names;
+    ListRefreshTimer* timer;
 
-    void onRefreshLists(wxCommandEvent&);
     void onCheckBox(wxCommandEvent& event);
 
     wxDECLARE_EVENT_TABLE();
 };
 
 
+class ListRefreshTimer : public wxTimer
+{
+public:
+    ListRefreshTimer(std::shared_ptr<GraphicsManager> manager,
+        wxCheckListBox* list);
+    ~ListRefreshTimer() {Stop();}
+    virtual void Notify() override;
+
+private:
+    std::shared_ptr<GraphicsManager> graphicsManager;
+    wxCheckListBox* listbox;
+    wxArrayString names;
+};
+
+
 class ObjectButtonPanel : public wxPanel
 {
 public:
-    ObjectButtonPanel(wxPanel* parentPanel, wxCheckListBox* target);
+    ObjectButtonPanel(std::shared_ptr<GraphicsManager> manager,
+        wxPanel* parentPanel, wxCheckListBox* target);
 
 private:
+    std::shared_ptr<GraphicsManager> graphicsManager;
     wxCheckListBox* targetListbox;
     wxButton* newButton;
     wxButton* renameButton;
+    wxButton* duplicateButton;
     wxButton* deleteButton;
 
-    void onNew(wxCommandEvent& event);
-    void onRename(wxCommandEvent& event);
-    void onDelete(wxCommandEvent& event);
+    void onNew(wxCommandEvent&);
+    void onRename(wxCommandEvent&);
+    void onDuplicate(wxCommandEvent&);
+    void onDelete(wxCommandEvent&);
 
     enum buttonEvents
     {
-        ID_RENAME
+        ID_RENAME,
+        ID_DUPLICATE
     };
 
     wxDECLARE_EVENT_TABLE();
