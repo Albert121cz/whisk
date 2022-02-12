@@ -122,6 +122,11 @@ void GraphicsManager::renameObject(int idx, std::string newName)
 
 void GraphicsManager::duplicateObject(int idx)
 {
+    // integer is cast to size_t, so the compiler doesn't flag this with
+    // a warning; GetSelection() from wxCheckListBox returns int anyway
+    if (static_cast<size_t>(idx) >= objects.size())
+        return;
+
     int newObjectIdx = idx + 1;
     
     objects.insert(objects.begin() + newObjectIdx,
@@ -137,6 +142,9 @@ void GraphicsManager::duplicateObject(int idx)
 
 void GraphicsManager::deleteObject(int idx)
 {
+    if (static_cast<size_t>(idx) >= objects.size())
+        return;
+
     #ifdef DEBUG
         std::ostringstream messageStream;
         messageStream << "Object deleted: " << objects[idx]->objectName;
@@ -149,6 +157,9 @@ void GraphicsManager::deleteObject(int idx)
 
 void GraphicsManager::showOrHideObject(int idx)
 {
+    if (static_cast<size_t>(idx) >= objects.size())
+        return;
+
     if (objects[idx]->show)
     {
         objects[idx]->show = false;
@@ -178,7 +189,13 @@ bool GraphicsManager::getObjectShow(int idx)
 }
 
 
-std::vector<std::string> GraphicsManager::getObjectNames()
+std::string GraphicsManager::getObjectName(int idx)
+{
+    return objects[idx]->objectName;
+}
+
+
+std::vector<std::string> GraphicsManager::getAllObjectNames()
 {
     std::vector<std::string> names;
 

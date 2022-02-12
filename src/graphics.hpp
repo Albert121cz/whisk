@@ -46,7 +46,8 @@ public:
     void deleteObject(int idx);
     void showOrHideObject(int idx);
     bool getObjectShow(int idx);
-    std::vector<std::string> getObjectNames();
+    std::string getObjectName(int idx);
+    std::vector<std::string> getAllObjectNames();
 
 private:
     Canvas* parentCanvas;

@@ -1,12 +1,8 @@
 #include "main.hpp"
 #include "graphics.hpp"
 
+
 wxIMPLEMENT_APP(App);
-
-// TODO: make wxListBox with objects and textures in different frame
-// these can be aligned using wxLayoutAlgorithm
-// -> https://zetcode.com/gui/wxwidgets/widgetsII/
-
 
 bool App::OnInit()
 {
@@ -215,20 +211,31 @@ ListRefreshTimer::ListRefreshTimer(std::shared_ptr<GraphicsManager> manager,
 
 void ListRefreshTimer::Notify()
 {
-    std::vector<std::string> newNames = graphicsManager->getObjectNames();
+    std::vector<std::string> newNames = graphicsManager->getAllObjectNames();
 
     for (size_t i = 0; i < newNames.size(); i++)
     {
-        if (i >= names.GetCount() || newNames[i] != names[i])
+        if (i >= names.GetCount())
         {
-            names.Insert(newNames[i], i);
+            names.Add(newNames[i]);
             listbox->InsertItems(1, &names[i], i);
+        }
+        else if (newNames[i] != names[i])
+        {
+            names[i] = newNames[i];
+            listbox->SetString(i, names[i]);
         }
 
         if (graphicsManager->getObjectShow(i) && !listbox->IsChecked(i))
             listbox->Check(i);
     }
-    
+
+    for (size_t i = newNames.size(); i < names.GetCount(); i++)
+    {
+        names.RemoveAt(i, 1);
+        listbox->Delete(i);
+    }
+
     StartOnce();
 }
 
@@ -253,21 +260,21 @@ ObjectButtonPanel::ObjectButtonPanel(std::shared_ptr<GraphicsManager> manager,
     : wxPanel(parentPanel, wxID_ANY), graphicsManager(manager)
 {
     targetListbox = target;
-    wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
     
     wxStaticText* label = new wxStaticText(this, wxID_ANY, wxT("Objects"));
     sizer->Add(label);
 
-    newButton = new wxButton(this, wxID_NEW, wxT("New"));
+    wxButton* newButton = new wxButton(this, wxID_NEW, "New");
     sizer->Add(newButton, 0, wxTOP, 5);
 
-    renameButton = new wxButton(this, ID_RENAME, wxT("Rename"));
+    wxButton* renameButton = new wxButton(this, ID_RENAME, "Rename");
     sizer->Add(renameButton, 0, wxTOP, 5);
 
-    duplicateButton = new wxButton(this, ID_DUPLICATE, wxT("Duplicate"));
+    wxButton* duplicateButton = new wxButton(this, ID_DUPLICATE, "Duplicate");
     sizer->Add(duplicateButton, 0, wxTOP, 5);
     
-    deleteButton = new wxButton(this, wxID_DELETE, wxT("Delete"));
+    wxButton* deleteButton = new wxButton(this, wxID_DELETE, "Delete");
     sizer->Add(deleteButton, 0, wxTOP, 5);
 
     SetSizer(sizer);
@@ -282,21 +289,99 @@ void ObjectButtonPanel::onNew(wxCommandEvent&)
 
 void ObjectButtonPanel::onRename(wxCommandEvent&)
 {
-    // TODO: interface with GraphicsManager
+    int idx = targetListbox->GetSelection();
+    if (idx == wxNOT_FOUND)
+        return;
+    
+    RenameFrame* frame = new RenameFrame(this, graphicsManager, idx);
+    frame->Show();
 }
 
 
 void ObjectButtonPanel::onDuplicate(wxCommandEvent&)
 {
     int idx = targetListbox->GetSelection();
-    if (idx != wxNOT_FOUND)
-        graphicsManager->duplicateObject(idx);
+    if (idx == wxNOT_FOUND)
+        return;
+    
+    graphicsManager->duplicateObject(idx);
 }
 
 
 void ObjectButtonPanel::onDelete(wxCommandEvent&)
 {
-    // TODO: interface with GraphicsManager
+    int idx = targetListbox->GetSelection();
+    if (idx == wxNOT_FOUND)
+        return;
+
+    graphicsManager->deleteObject(idx);
+}
+
+
+wxBEGIN_EVENT_TABLE(RenameFrame, wxFrame)
+    EVT_TEXT_ENTER(wxID_ANY, RenameFrame::onEnter)
+wxEND_EVENT_TABLE()
+
+
+RenameFrame::RenameFrame(wxWindow* parent,
+    std::shared_ptr<GraphicsManager> manager, int idx)
+    : wxFrame(parent, wxID_ANY, "Rename", wxDefaultPosition, wxDefaultSize,
+    wxCAPTION | wxFRAME_FLOAT_ON_PARENT), graphicsManager(manager), objIdx(idx)
+{
+    wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+
+    textField = new wxTextCtrl(this, wxID_ANY, manager->getObjectName(idx),
+        wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+    sizer->Add(textField, 0, wxEXPAND);
+
+    RenameFrameButtonPanel* buttons = new RenameFrameButtonPanel(this);
+    sizer->Add(buttons, 0, wxTOP, 2);
+
+    SetSizer(sizer);
+
+    SetSize(sizer->ComputeFittingWindowSize(this));
+    
+    // calculate the position so it is in the middle of the main frame
+    wxWindow* main = parent->GetGrandParent();
+    wxRect newRect = parent->GetGrandParent()->GetRect().Deflate(
+        (main->GetSize().GetWidth() - GetSize().GetWidth())/2,
+        (main->GetSize().GetHeight() - GetSize().GetHeight())/2);
+    SetPosition(newRect.GetPosition());
+}
+
+
+void RenameFrame::onEnter(wxCommandEvent&)
+{
+    graphicsManager->renameObject(objIdx, textField->GetValue().ToStdString());
+    Close();
+}
+
+
+wxBEGIN_EVENT_TABLE(RenameFrameButtonPanel, wxPanel)
+    EVT_BUTTON(wxID_OK, RenameFrameButtonPanel::onOk)
+    EVT_BUTTON(wxID_CANCEL, RenameFrameButtonPanel::onCancel)
+wxEND_EVENT_TABLE()
+
+
+RenameFrameButtonPanel::RenameFrameButtonPanel(RenameFrame* parent)
+    : wxPanel(parent), parentFrame(parent)
+{
+    wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
+
+    wxButton* okButton = new wxButton(this, wxID_OK, "Ok");
+    sizer->Add(okButton, wxEXPAND);
+
+    wxButton* cancelButton = new wxButton(this, wxID_CANCEL, "Cancel");
+    sizer->Add(cancelButton, wxEXPAND | wxLEFT, 5);
+
+    SetSizer(sizer);
+}
+
+
+void RenameFrameButtonPanel::onOk(wxCommandEvent&)
+{
+    wxEvent* event = new wxCommandEvent(wxEVT_TEXT_ENTER);
+    wxQueueEvent(parentFrame, event);
 }
 
 

@@ -30,6 +30,7 @@
 class MainFrame;
 class ObjectPanel;
 class ObjectButtonPanel;
+class RenameFrame;
 class Canvas;
 class GraphicsManager;
 class ListRefreshTimer;
@@ -110,12 +111,9 @@ public:
         wxPanel* parentPanel, wxCheckListBox* target);
 
 private:
+    MainFrame* parentFrame;
     std::shared_ptr<GraphicsManager> graphicsManager;
     wxCheckListBox* targetListbox;
-    wxButton* newButton;
-    wxButton* renameButton;
-    wxButton* duplicateButton;
-    wxButton* deleteButton;
 
     void onNew(wxCommandEvent&);
     void onRename(wxCommandEvent&);
@@ -127,6 +125,38 @@ private:
         ID_RENAME,
         ID_DUPLICATE
     };
+
+    wxDECLARE_EVENT_TABLE();
+};
+
+
+class RenameFrame : public wxFrame
+{
+public:
+    RenameFrame(wxWindow* parent, std::shared_ptr<GraphicsManager> manager,
+        int idx);
+
+private:
+    std::shared_ptr<GraphicsManager> graphicsManager;
+    wxTextCtrl* textField;
+    int objIdx;
+
+    void onEnter(wxCommandEvent&);
+
+    wxDECLARE_EVENT_TABLE();
+};
+
+
+class RenameFrameButtonPanel : public wxPanel
+{
+public:
+    RenameFrameButtonPanel(RenameFrame* parent);
+
+private:
+    RenameFrame* parentFrame;
+
+    void onOk(wxCommandEvent&);
+    void onCancel(wxCommandEvent&) {parentFrame->Close();}
 
     wxDECLARE_EVENT_TABLE();
 };
