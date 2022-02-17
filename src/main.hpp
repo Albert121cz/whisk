@@ -12,10 +12,11 @@
 #include <wx/image.h>
 #include <wx/wfstream.h>
 #include <wx/glcanvas.h>
-#include <wx/laywin.h>
+#include <wx/spinctrl.h>
 #include <wx/wx.h>
 #include <GL/glew.h>
 #include <GL/wglew.h>
+#include <glm/glm.hpp>
 #include <memory>
 #include <vector>
 #include <chrono>
@@ -31,9 +32,10 @@ class MainFrame;
 class ObjectPanel;
 class ObjectButtonPanel;
 class RenameFrame;
+class ObjectSettings;
 class Canvas;
 class GraphicsManager;
-class ListRefreshTimer;
+class SidePanelRefreshTimer;
 
 
 class App : public wxApp
@@ -44,7 +46,6 @@ public:
 private:
     MainFrame* frame;
     ObjectPanel* objectFrame;
-    wxLayoutAlgorithm* layoutAlgorithm;
 };
 
 
@@ -59,7 +60,12 @@ private:
         wxLog* logger;
     #endif /* DEBUG */
     Canvas* canvas;
-    ObjectPanel* objects;
+
+    enum Event
+    {
+        LOAD_OBJ,
+        LOAD_TEX
+    };
 
     void onObjLoad(wxCommandEvent&);
     void onTexLoad(wxCommandEvent&);
@@ -71,17 +77,30 @@ private:
 };
 
 
+class SidePanel : public wxPanel
+{
+public:
+    SidePanel(MainFrame* parent, std::shared_ptr<GraphicsManager> manager);
+    ~SidePanel();
+
+private:
+    SidePanelRefreshTimer* timer;
+};
+
+
 class ObjectPanel : public wxPanel
 {
 public:
-    ObjectPanel(MainFrame* parent, std::shared_ptr<GraphicsManager> manager);
-    ~ObjectPanel();
-    
+    ObjectPanel(SidePanel* parent, MainFrame* main,
+        std::shared_ptr<GraphicsManager> manager);
+
+    wxCheckListBox* getListbox();
+
 private:
     std::shared_ptr<GraphicsManager> graphicsManager;
     ObjectButtonPanel* buttons;
     wxCheckListBox* listbox;
-    ListRefreshTimer* timer;
+    SidePanelRefreshTimer* timer;
 
     void onCheckBox(wxCommandEvent& event);
 
@@ -89,18 +108,20 @@ private:
 };
 
 
-class ListRefreshTimer : public wxTimer
+class SidePanelRefreshTimer : public wxTimer
 {
 public:
-    ListRefreshTimer(std::shared_ptr<GraphicsManager> manager,
-        wxCheckListBox* list);
-    ~ListRefreshTimer() {Stop();}
+    SidePanelRefreshTimer(std::shared_ptr<GraphicsManager> manager,
+        ObjectSettings* settings, wxCheckListBox* list);
+    ~SidePanelRefreshTimer() {Stop();}
     virtual void Notify() override;
 
 private:
     std::shared_ptr<GraphicsManager> graphicsManager;
+    ObjectSettings* objectSettings;
     wxCheckListBox* listbox;
     wxArrayString names;
+    int lastSelected = wxNOT_FOUND;
 };
 
 
@@ -108,10 +129,10 @@ class ObjectButtonPanel : public wxPanel
 {
 public:
     ObjectButtonPanel(std::shared_ptr<GraphicsManager> manager,
-        wxPanel* parentPanel, wxCheckListBox* target);
+        wxPanel* parentPanel, MainFrame* main, wxCheckListBox* target);
 
 private:
-    MainFrame* parentFrame;
+    MainFrame* mainFrame;
     std::shared_ptr<GraphicsManager> graphicsManager;
     wxCheckListBox* targetListbox;
 
@@ -133,10 +154,12 @@ private:
 class RenameFrame : public wxFrame
 {
 public:
-    RenameFrame(wxWindow* parent, std::shared_ptr<GraphicsManager> manager,
+    RenameFrame(MainFrame* parent, std::shared_ptr<GraphicsManager> manager,
         int idx);
+    ~RenameFrame();
 
 private:
+    MainFrame* mainFrame;
     std::shared_ptr<GraphicsManager> graphicsManager;
     wxTextCtrl* textField;
     int objIdx;
@@ -157,6 +180,36 @@ private:
 
     void onOk(wxCommandEvent&);
     void onCancel(wxCommandEvent&) {parentFrame->Close();}
+
+    wxDECLARE_EVENT_TABLE();
+};
+
+
+class ObjectSettings : public wxPanel
+{
+public:
+    ObjectSettings(wxPanel* parent, wxCheckListBox* list,
+        std::shared_ptr<GraphicsManager> manager);
+
+private:
+    wxCheckListBox* listbox;
+    std::shared_ptr<GraphicsManager> graphicsManager;
+    std::vector<wxSpinCtrlDouble*> textFields;
+
+    void onRefresh(wxCommandEvent&);
+    void onEnter(wxCommandEvent&);
+    void onChange(wxSpinDoubleEvent& event);
+
+    enum TextFieldsIdx
+    {
+        POS_X = 0,
+        POS_Y = 1,
+        POS_Z = 2,
+        ROT_X = 3,
+        ROT_Y = 4,
+        ROT_Z = 5,
+        SIZE = 6
+    };
 
     wxDECLARE_EVENT_TABLE();
 };
@@ -206,13 +259,5 @@ private:
 
     wxDECLARE_EVENT_TABLE();
 };
-
-
-enum Event
-{
-    LOAD_OBJ,
-    LOAD_TEX
-};
-
 
 #endif /* MAIN_HPP_ */

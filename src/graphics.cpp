@@ -195,6 +195,24 @@ std::string GraphicsManager::getObjectName(int idx)
 }
 
 
+glm::vec3* GraphicsManager::getObjectPosVec(int idx)
+{
+    return &objects[idx]->position;
+}
+
+
+glm::vec3* GraphicsManager::getObjectRotVec(int idx)
+{
+    return &objects[idx]->rotation;
+}
+
+
+glm::vec3* GraphicsManager::getObjectSize(int idx)
+{
+    return &objects[idx]->size;
+}
+
+
 std::vector<std::string> GraphicsManager::getAllObjectNames()
 {
     std::vector<std::string> names;

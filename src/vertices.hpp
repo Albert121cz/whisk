@@ -95,6 +95,9 @@ class Object
 public:
     bool show = true;
     std::string objectName;
+    glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 size = glm::vec3(1.0f, 1.0f, 1.0f);
 
     Object(GraphicsManager* parent, TextureManager* textures, std::string name,
         GLfloat* vert, size_t vertSize, GLuint* indices, size_t indSize);
@@ -121,9 +124,6 @@ private:
 
     GLuint64 texHandle;
     GLfloat color[3] = {DEFAULT_COLOR};
-    glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 size = glm::vec3(1.0f, 1.0f, 1.0f);
     glm::mat4 model;
 };
 

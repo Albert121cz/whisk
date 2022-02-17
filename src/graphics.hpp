@@ -47,6 +47,9 @@ public:
     void showOrHideObject(int idx);
     bool getObjectShow(int idx);
     std::string getObjectName(int idx);
+    glm::vec3* getObjectPosVec(int idx);
+    glm::vec3* getObjectRotVec(int idx);
+    glm::vec3* getObjectSize(int idx);
     std::vector<std::string> getAllObjectNames();
 
 private:

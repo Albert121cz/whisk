@@ -70,8 +70,8 @@ MainFrame::MainFrame(const wxString& title,
         canvas = new Canvas(this, glDefAttrs);
         mainSizer->Add(canvas, 1, wxEXPAND);
 
-        objects = new ObjectPanel(this, canvas->getGraphicsManager());
-        mainSizer->Add(objects, 0, wxEXPAND);
+        SidePanel* side = new SidePanel(this, canvas->getGraphicsManager());
+        mainSizer->Add(side, 0, wxEXPAND);
     }
     else
     {
@@ -170,13 +170,40 @@ void MainFrame::onClose(wxCloseEvent& event)
 }
 
 
+SidePanel::SidePanel(MainFrame* parent,
+    std::shared_ptr<GraphicsManager> manager)
+    : wxPanel(parent, wxID_ANY)
+{
+    wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+
+    ObjectPanel* objects = new ObjectPanel(this, parent, manager);
+    sizer->Add(objects, 1, wxEXPAND);
+
+    ObjectSettings* settings = new ObjectSettings(this, objects->getListbox(),
+        manager);
+    sizer->Add(settings, 0, wxUP, 10);
+
+    SetMaxSize(wxSize(280, -1));
+
+    SetSizer(sizer);
+
+    timer = new SidePanelRefreshTimer(manager, settings, objects->getListbox());
+}
+
+
+SidePanel::~SidePanel()
+{
+    delete timer;
+}
+
+
 wxBEGIN_EVENT_TABLE(ObjectPanel, wxPanel)
     EVT_CHECKLISTBOX(wxID_ANY, ObjectPanel::onCheckBox)
 wxEND_EVENT_TABLE()
 
 
 // https://zetcode.com/gui/wxwidgets/widgetsII/
-ObjectPanel::ObjectPanel(MainFrame* parent, 
+ObjectPanel::ObjectPanel(SidePanel* parent, MainFrame* main, 
     std::shared_ptr<GraphicsManager> manager)
     : wxPanel(parent, wxID_ANY), graphicsManager(manager)
 {
@@ -185,31 +212,32 @@ ObjectPanel::ObjectPanel(MainFrame* parent,
     listbox = new wxCheckListBox(this, wxID_ANY);
     sizer->Add(listbox, 4, wxEXPAND | wxALL, 5);
 
-    buttons = new ObjectButtonPanel(graphicsManager, this, listbox);
+    buttons = new ObjectButtonPanel(graphicsManager, this, main, listbox);
     sizer->Add(buttons, 1, wxEXPAND | wxRIGHT, 5);
 
-    SetMaxSize(wxSize(250, -1));
     SetSizer(sizer);
-
-    timer = new ListRefreshTimer(graphicsManager, listbox);
 }
 
 
-ObjectPanel::~ObjectPanel()
+wxCheckListBox* ObjectPanel::getListbox()
 {
-    delete timer;
+    return listbox;
 }
 
 
-ListRefreshTimer::ListRefreshTimer(std::shared_ptr<GraphicsManager> manager,
+
+SidePanelRefreshTimer::SidePanelRefreshTimer(
+    std::shared_ptr<GraphicsManager> manager, ObjectSettings* settings,
     wxCheckListBox* list)
-    : graphicsManager(manager), listbox(list)
+    : graphicsManager(manager), objectSettings(settings), listbox(list)
 {
-    StartOnce(250);
+    StartOnce(48);
 }
 
 
-void ListRefreshTimer::Notify()
+wxDEFINE_EVENT(REFRESH_OBJECT_SETTINGS, wxCommandEvent);
+
+void SidePanelRefreshTimer::Notify()
 {
     std::vector<std::string> newNames = graphicsManager->getAllObjectNames();
 
@@ -225,15 +253,23 @@ void ListRefreshTimer::Notify()
             names[i] = newNames[i];
             listbox->SetString(i, names[i]);
         }
-
-        if (graphicsManager->getObjectShow(i) && !listbox->IsChecked(i))
-            listbox->Check(i);
+            
+        if (graphicsManager->getObjectShow(i) != listbox->IsChecked(i))
+            listbox->Check(i, graphicsManager->getObjectShow(i));
     }
 
     for (size_t i = newNames.size(); i < names.GetCount(); i++)
     {
         names.RemoveAt(i, 1);
         listbox->Delete(i);
+    }
+
+    int selected = listbox->GetSelection();
+    if (lastSelected != listbox->GetSelection())
+    {
+        wxEvent* event = new wxCommandEvent(REFRESH_OBJECT_SETTINGS);
+        wxQueueEvent(objectSettings, event);
+        lastSelected = selected;
     }
 
     StartOnce();
@@ -256,13 +292,13 @@ wxEND_EVENT_TABLE()
 
 
 ObjectButtonPanel::ObjectButtonPanel(std::shared_ptr<GraphicsManager> manager,
-    wxPanel* parentPanel, wxCheckListBox* target)
-    : wxPanel(parentPanel, wxID_ANY), graphicsManager(manager)
+    wxPanel* parentPanel, MainFrame* main, wxCheckListBox* target)
+    : wxPanel(parentPanel, wxID_ANY), mainFrame(main), graphicsManager(manager)
 {
     targetListbox = target;
     wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
     
-    wxStaticText* label = new wxStaticText(this, wxID_ANY, wxT("Objects"));
+    wxStaticText* label = new wxStaticText(this, wxID_ANY, "Objects");
     sizer->Add(label);
 
     wxButton* newButton = new wxButton(this, wxID_NEW, "New");
@@ -293,8 +329,9 @@ void ObjectButtonPanel::onRename(wxCommandEvent&)
     if (idx == wxNOT_FOUND)
         return;
     
-    RenameFrame* frame = new RenameFrame(this, graphicsManager, idx);
+    RenameFrame* frame = new RenameFrame(mainFrame, graphicsManager, idx);
     frame->Show();
+    mainFrame->Disable();
 }
 
 
@@ -323,10 +360,11 @@ wxBEGIN_EVENT_TABLE(RenameFrame, wxFrame)
 wxEND_EVENT_TABLE()
 
 
-RenameFrame::RenameFrame(wxWindow* parent,
+RenameFrame::RenameFrame(MainFrame* parent,
     std::shared_ptr<GraphicsManager> manager, int idx)
     : wxFrame(parent, wxID_ANY, "Rename", wxDefaultPosition, wxDefaultSize,
-    wxCAPTION | wxFRAME_FLOAT_ON_PARENT), graphicsManager(manager), objIdx(idx)
+    wxCAPTION | wxFRAME_FLOAT_ON_PARENT), mainFrame(parent),
+    graphicsManager(manager), objIdx(idx)
 {
     wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
@@ -342,11 +380,16 @@ RenameFrame::RenameFrame(wxWindow* parent,
     SetSize(sizer->ComputeFittingWindowSize(this));
     
     // calculate the position so it is in the middle of the main frame
-    wxWindow* main = parent->GetGrandParent();
-    wxRect newRect = parent->GetGrandParent()->GetRect().Deflate(
-        (main->GetSize().GetWidth() - GetSize().GetWidth())/2,
-        (main->GetSize().GetHeight() - GetSize().GetHeight())/2);
+    wxRect newRect = parent->GetRect().Deflate(
+        (parent->GetSize().GetWidth() - GetSize().GetWidth())/2,
+        (parent->GetSize().GetHeight() - GetSize().GetHeight())/2);
     SetPosition(newRect.GetPosition());
+}
+
+
+RenameFrame::~RenameFrame()
+{
+    mainFrame->Enable();
 }
 
 
@@ -382,6 +425,157 @@ void RenameFrameButtonPanel::onOk(wxCommandEvent&)
 {
     wxEvent* event = new wxCommandEvent(wxEVT_TEXT_ENTER);
     wxQueueEvent(parentFrame, event);
+}
+
+
+wxBEGIN_EVENT_TABLE(ObjectSettings, wxPanel)
+    EVT_COMMAND(wxID_ANY, REFRESH_OBJECT_SETTINGS, ObjectSettings::onRefresh)
+    EVT_TEXT_ENTER(wxID_ANY, ObjectSettings::onEnter)
+    EVT_SPINCTRLDOUBLE(wxID_ANY, ObjectSettings::onChange)
+wxEND_EVENT_TABLE()
+
+ObjectSettings::ObjectSettings(wxPanel* parent, wxCheckListBox* list,
+    std::shared_ptr<GraphicsManager> manager)
+    : wxPanel(parent, wxID_ANY), listbox(list), graphicsManager(manager)
+{
+    wxFlexGridSizer* sizer = new wxFlexGridSizer(7, 10, 5);
+
+    wxSize fieldSize = wxSize(61, -1);
+
+    wxStaticText* positionText = new wxStaticText(this, wxID_ANY, "Pos.");
+    sizer->Add(positionText, 0, wxLEFT, 3);
+
+    wxStaticText* positionXText = new wxStaticText(this, wxID_ANY, "X:");
+    textFields.push_back(new wxSpinCtrlDouble(this, POS_X, "",
+        wxDefaultPosition, fieldSize, wxSP_ARROW_KEYS | wxTE_PROCESS_ENTER));
+    sizer->Add(positionXText, 0, wxLEFT, 4);
+    sizer->Add(textFields[POS_X]);
+
+    wxStaticText* positionYText = new wxStaticText(this, wxID_ANY, "Y:");
+    textFields.push_back(new wxSpinCtrlDouble(this, POS_Y, "",
+        wxDefaultPosition, fieldSize, wxSP_ARROW_KEYS | wxTE_PROCESS_ENTER));
+    sizer->Add(positionYText, 0, wxLEFT, 2);
+    sizer->Add(textFields[POS_Y]);
+
+    wxStaticText* positionZText = new wxStaticText(this, wxID_ANY, "Z:");
+    textFields.push_back(new wxSpinCtrlDouble(this, POS_Z, "",
+        wxDefaultPosition, fieldSize,  wxSP_ARROW_KEYS | wxTE_PROCESS_ENTER));
+    sizer->Add(positionZText, 0, wxLEFT, 2);
+    sizer->Add(textFields[POS_Z]);
+
+    for (int i = POS_X; i <= POS_Z; i++)
+    {
+        textFields[i]->SetRange(-99.99, 99.99);
+        textFields[i]->SetIncrement(0.01);
+        textFields[i]->SetDigits(2);
+    }
+
+    wxStaticText* rotationText = new wxStaticText(this, wxID_ANY, "Rot.");
+    sizer->Add(rotationText, 0, wxLEFT, 3);
+
+    wxStaticText* rotationXText = new wxStaticText(this, wxID_ANY, "X:");
+    textFields.push_back(new wxSpinCtrlDouble(this, ROT_X, "",
+        wxDefaultPosition, fieldSize,
+        wxSP_ARROW_KEYS | wxSP_WRAP | wxTE_PROCESS_ENTER));
+    sizer->Add(rotationXText, 0, wxLEFT, 4);
+    sizer->Add(textFields[ROT_X]);
+
+    wxStaticText* rotationYText = new wxStaticText(this, wxID_ANY, "Y:");
+    textFields.push_back(new wxSpinCtrlDouble(this, ROT_Y, "", 
+        wxDefaultPosition, fieldSize,
+        wxSP_ARROW_KEYS | wxSP_WRAP | wxTE_PROCESS_ENTER));
+    sizer->Add(rotationYText, 0, wxLEFT, 2);
+    sizer->Add(textFields[ROT_Y]);
+
+    wxStaticText* rotationZText = new wxStaticText(this, wxID_ANY, "Z:");
+    textFields.push_back(new wxSpinCtrlDouble(this, ROT_Z, "",
+        wxDefaultPosition, fieldSize,
+        wxSP_ARROW_KEYS | wxSP_WRAP | wxTE_PROCESS_ENTER));
+    sizer->Add(rotationZText, 0, wxLEFT, 2);
+    sizer->Add(textFields[ROT_Z]);
+
+    for (int i = ROT_X; i <= ROT_Z; i++)
+    {
+        textFields[i]->SetRange(0, 359.9);
+        textFields[i]->SetIncrement(0.1);
+        textFields[i]->SetDigits(1);
+    }
+
+    wxStaticText* sizeText = new wxStaticText(this, wxID_ANY, "Size");
+    sizer->Add(sizeText, 0, wxLEFT, 3);
+
+    textFields.push_back(new wxSpinCtrlDouble(this, SIZE, "", wxDefaultPosition,
+        fieldSize, wxSP_ARROW_KEYS | wxTE_PROCESS_ENTER));
+    sizer->AddStretchSpacer();
+    sizer->Add(textFields[SIZE]);
+
+    textFields[SIZE]->SetRange(0, 99.999);
+    textFields[SIZE]->SetIncrement(0.01);
+    textFields[SIZE]->SetDigits(3);
+
+    SetSizer(sizer);
+};
+
+
+void ObjectSettings::onRefresh(wxCommandEvent&)
+{
+    int selected = listbox->GetSelection();
+    
+    if (selected == wxNOT_FOUND)
+    {
+        for (size_t i = 0; i < textFields.size(); i++)
+            textFields[i]->SetValue(0);
+        return;
+    }
+
+    glm::vec3* pos = graphicsManager->getObjectPosVec(selected);
+    glm::vec3* rot = graphicsManager->getObjectRotVec(selected);
+    glm::vec3* size = graphicsManager->getObjectSize(selected);
+
+    float values[] = {(*pos).x, (*pos).y, (*pos).z,
+        (*rot).x, (*rot).y, (*rot).z, (*size).x};
+
+    for (size_t i = 0; i < textFields.size(); i++)
+        textFields[i]->SetValue(wxString::Format("%f", values[i]));
+}
+
+
+void ObjectSettings::onEnter(wxCommandEvent&)
+{
+    // kick the user out of the field, so the changes take place
+    Navigate();
+}
+
+
+void ObjectSettings::onChange(wxSpinDoubleEvent& event)
+{
+    int fieldID = event.GetId();
+
+    if (listbox->GetSelection() == wxNOT_FOUND)
+    {
+        textFields[fieldID]->SetValue(0);
+        return;
+    }
+
+    int selected = listbox->GetSelection();
+
+    glm::vec3* pos = graphicsManager->getObjectPosVec(selected);
+    glm::vec3* rot = graphicsManager->getObjectRotVec(selected);
+    glm::vec3* size = graphicsManager->getObjectSize(selected);
+
+    float* values[] = {&pos->x, &pos->y, &pos->z,  &rot->x, &rot->y, &rot->z,
+        &size->x, &size->y, &size->z};
+    
+    float fieldValue = textFields[fieldID]->GetValue();
+    
+    *values[fieldID] = fieldValue;
+
+    // size has 3 dimensions and user edits them all at once
+    if (fieldID == SIZE)
+    {
+        *values[SIZE + 1] = fieldValue;
+        *values[SIZE + 2] = fieldValue;
+    }
 }
 
 
