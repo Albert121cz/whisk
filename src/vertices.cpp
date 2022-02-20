@@ -141,8 +141,7 @@ Object::~Object()
 Object::Object(const Object& old)
 {
     show = old.show;
-    // TODO: add number to name
-    objectName = old.objectName;
+    objectName = old.objectName + " copy";
 
     parentManager = old.parentManager;
     texManager = old.texManager;

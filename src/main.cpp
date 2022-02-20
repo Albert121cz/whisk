@@ -8,7 +8,7 @@ bool App::OnInit()
 {
     wxInitAllImageHandlers();
 
-    frame = new MainFrame("Hello World", wxPoint(50, 50), wxSize(800, 600));
+    frame = new MainFrame("Hello World", wxDefaultPosition, wxSize(800, 600));
 
     if (!frame->openGLInitialized())
         return false;    
@@ -18,14 +18,16 @@ bool App::OnInit()
 }
 
 
+wxDEFINE_EVENT(NEW_OBJECT, wxCommandEvent);
+
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
+    EVT_COMMAND(wxID_ANY, NEW_OBJECT, MainFrame::onObjLoad)
     EVT_MENU(LOAD_OBJ, MainFrame::onObjLoad)
     EVT_MENU(LOAD_TEX, MainFrame::onTexLoad)
     EVT_MENU(wxID_ABOUT, MainFrame::onAbout)
     EVT_MENU(wxID_EXIT, MainFrame::onExit)
     EVT_CLOSE(MainFrame::onClose)
 wxEND_EVENT_TABLE()
-
 
 MainFrame::MainFrame(const wxString& title,
                      const wxPoint& pos, const wxSize& size)
@@ -40,9 +42,9 @@ MainFrame::MainFrame(const wxString& title,
     wxBoxSizer* mainSizer = new wxBoxSizer(wxHORIZONTAL);
     
     wxMenu* menuContextFile = new wxMenu;
-    menuContextFile->Append(Event::LOAD_OBJ, "&Load object...\tCtrl-O",
+    menuContextFile->Append(Event::LOAD_OBJ, "Load &object...\tCtrl-O",
         "Load OBJ file");
-    menuContextFile->Append(Event::LOAD_TEX, "&Load texture...\tCtrl-T",
+    menuContextFile->Append(Event::LOAD_TEX, "Load &texture...\tCtrl-T",
         "Load texture file");
     menuContextFile->AppendSeparator();
     menuContextFile->Append(wxID_EXIT);
@@ -101,19 +103,21 @@ bool MainFrame::openGLInitialized()
 
 void MainFrame::onObjLoad(wxCommandEvent&)
 {
-    wxFileDialog loadFileDialog(this, _("Load OBJ file"), "", "", 
-                    "OBJ (*.obj)|*.obj", wxFD_OPEN|wxFD_FILE_MUST_EXIST);
+    wxFileDialog fileDialog(this, "Load OBJ file", "", "", 
+                    "OBJ (*.obj)|*.obj", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
     
-    if (loadFileDialog.ShowModal() == wxID_CANCEL)
+    if (fileDialog.ShowModal() == wxID_CANCEL)
         return;
 
-    wxFileInputStream load_stream(loadFileDialog.GetPath());
+    wxString path = fileDialog.GetPath();
+
+    wxFileInputStream loadStream(path);
     
-    if (load_stream.IsOk())
-    {
-        wxLogVerbose("Object file opened: '%s'", loadFileDialog.GetPath());
-        return;
-    }
+    if (loadStream.IsOk())
+        canvas->getGraphicsManager()->newObject(path.ToStdString());
+    else
+        wxMessageBox("The object file failed to open", "Object load error",
+        wxOK | wxICON_ERROR, this);
 }
 
 
@@ -319,7 +323,8 @@ ObjectButtonPanel::ObjectButtonPanel(std::shared_ptr<GraphicsManager> manager,
 
 void ObjectButtonPanel::onNew(wxCommandEvent&)
 {
-    // TODO: interface with GraphicsManager
+    wxEvent* event = new wxCommandEvent(NEW_OBJECT);
+    wxQueueEvent(mainFrame, event);
 }
 
 
@@ -745,8 +750,6 @@ void Canvas::onSize(wxSizeEvent&)
 {
 
     GetClientSize(&viewportDims.first, &viewportDims.second);
-    wxLogVerbose("Viewport dimensions: %ix%i", 
-        viewportDims.first, viewportDims.second);
     glViewport(0, 0, viewportDims.first, viewportDims.second);
 }
 

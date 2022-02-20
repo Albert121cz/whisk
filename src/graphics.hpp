@@ -11,6 +11,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 #include <memory>
+#include <fstream>
 
 #ifdef DEBUG
     #include "GLDebugMessageCallback.h"
@@ -39,8 +40,7 @@ public:
     void render();
     void sendToLog(std::string message);
     void setUniformMatrix(glm::mat4 mat, const char* name);
-    void addObject(std::string name, GLfloat* vert, size_t vertSize,
-        GLuint* ind, size_t indSize);
+    void newObject(std::string file);
     void renameObject(int idx, std::string newName);
     void duplicateObject(int idx);
     void deleteObject(int idx);
@@ -58,6 +58,12 @@ private:
     TextureManager* textures;
     Camera* camera;
     std::vector<std::unique_ptr<Object>> objects;
+
+    std::vector<std::vector<std::string>> parseFile(std::string name);
+    std::vector<std::tuple<GLuint, GLuint, GLuint>> parseFace(size_t vertices,
+        std::vector<std::string> data);
+    void triangulate(std::vector<std::tuple<GLuint, GLuint, GLuint>>* indices,
+        std::shared_ptr<std::vector<GLfloat>> vertices);
 };
 
 
