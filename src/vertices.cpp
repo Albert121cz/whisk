@@ -158,6 +158,7 @@ Object::Object(const Object& old)
     position = old.position;
     rotation = old.rotation;
     size = old.size;
+    renderMode = old.renderMode;
 
     vertexBuffer = new VertexBuffer(*old.vertexBuffer);
     elementBuffer = new ElementBuffer(*old.elementBuffer);
@@ -202,6 +203,23 @@ void Object::draw()
     model = glm::scale(model, size);
 
     parentManager->setUniformMatrix(model, "model");
+
+    GLenum oglRenderMode;
+    switch(renderMode)
+    {
+        case FILL:
+            oglRenderMode = GL_FILL;
+        break;
+
+        case LINE:
+            oglRenderMode = GL_LINE;
+        break;
+
+        case POINT:
+            oglRenderMode = GL_POINT;
+        break;
+    }
+    glPolygonMode(GL_FRONT_AND_BACK, oglRenderMode);
 
     vertexArray->bind();
     glDrawElements(GL_TRIANGLES, indicesLen*sizeof(GLuint), GL_UNSIGNED_INT, 0);

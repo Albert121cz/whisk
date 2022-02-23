@@ -9,9 +9,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/vector_angle.hpp>
 #include <string>
 #include <memory>
 #include <fstream>
+#include <vector>
+#include <list>
 
 #ifdef DEBUG
     #include "GLDebugMessageCallback.h"
@@ -50,6 +53,7 @@ public:
     glm::vec3* getObjectPosVec(int idx);
     glm::vec3* getObjectRotVec(int idx);
     glm::vec3* getObjectSize(int idx);
+    int* getObjectMode(int idx);
     std::vector<std::string> getAllObjectNames();
 
 private:
@@ -63,7 +67,7 @@ private:
     std::vector<std::tuple<GLuint, GLuint, GLuint>> parseFace(size_t vertices,
         std::vector<std::string> data);
     void triangulate(std::vector<std::tuple<GLuint, GLuint, GLuint>>* indices,
-        std::shared_ptr<std::vector<GLfloat>> vertices);
+        std::shared_ptr<std::vector<GLfloat>> allVertices);
 };
 
 

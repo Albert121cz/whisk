@@ -195,10 +195,12 @@ private:
     wxCheckListBox* listbox;
     std::shared_ptr<GraphicsManager> graphicsManager;
     std::vector<wxSpinCtrlDouble*> textFields;
+    wxChoice* renderModeChoice;
 
     void onRefresh(wxCommandEvent&);
     void onEnter(wxCommandEvent&);
-    void onChange(wxSpinDoubleEvent& event);
+    void onSpinChange(wxSpinDoubleEvent& event);
+    void onModeChange(wxCommandEvent&);
 
     enum TextFieldsIdx
     {
@@ -209,6 +211,13 @@ private:
         ROT_Y = 4,
         ROT_Z = 5,
         SIZE = 6
+    };
+
+    enum ModeChoice
+    {
+        FILL = 0,
+        LINE = 1,
+        POINT = 2
     };
 
     wxDECLARE_EVENT_TABLE();

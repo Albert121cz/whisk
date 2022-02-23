@@ -187,7 +187,7 @@ SidePanel::SidePanel(MainFrame* parent,
         manager);
     sizer->Add(settings, 0, wxUP, 10);
 
-    SetMaxSize(wxSize(280, -1));
+    SetMaxSize(wxSize(290, -1));
 
     SetSizer(sizer);
 
@@ -436,7 +436,8 @@ void RenameFrameButtonPanel::onOk(wxCommandEvent&)
 wxBEGIN_EVENT_TABLE(ObjectSettings, wxPanel)
     EVT_COMMAND(wxID_ANY, REFRESH_OBJECT_SETTINGS, ObjectSettings::onRefresh)
     EVT_TEXT_ENTER(wxID_ANY, ObjectSettings::onEnter)
-    EVT_SPINCTRLDOUBLE(wxID_ANY, ObjectSettings::onChange)
+    EVT_SPINCTRLDOUBLE(wxID_ANY, ObjectSettings::onSpinChange)
+    EVT_CHOICE(wxID_ANY, ObjectSettings::onModeChange)
 wxEND_EVENT_TABLE()
 
 ObjectSettings::ObjectSettings(wxPanel* parent, wxCheckListBox* list,
@@ -518,6 +519,18 @@ ObjectSettings::ObjectSettings(wxPanel* parent, wxCheckListBox* list,
     textFields[SIZE]->SetIncrement(0.01);
     textFields[SIZE]->SetDigits(3);
 
+    for (int i = 0; i < 4; i++)
+        sizer->AddStretchSpacer();
+
+    wxStaticText* renderModeText = new wxStaticText(this, wxID_ANY, "Mode");
+    sizer->Add(renderModeText, 0, wxLEFT, 3);
+
+    wxString str[] = {"Fill", "Line", "Point"};
+    renderModeChoice = new wxChoice(this, wxID_ANY, wxDefaultPosition,
+        fieldSize, 3, str);
+    sizer->AddStretchSpacer();
+    sizer->Add(renderModeChoice);
+
     SetSizer(sizer);
 };
 
@@ -536,12 +549,15 @@ void ObjectSettings::onRefresh(wxCommandEvent&)
     glm::vec3* pos = graphicsManager->getObjectPosVec(selected);
     glm::vec3* rot = graphicsManager->getObjectRotVec(selected);
     glm::vec3* size = graphicsManager->getObjectSize(selected);
+    int* mode = graphicsManager->getObjectMode(selected);
 
     float values[] = {(*pos).x, (*pos).y, (*pos).z,
         (*rot).x, (*rot).y, (*rot).z, (*size).x};
 
     for (size_t i = 0; i < textFields.size(); i++)
         textFields[i]->SetValue(wxString::Format("%f", values[i]));
+
+    renderModeChoice->SetSelection(*mode);
 }
 
 
@@ -552,17 +568,17 @@ void ObjectSettings::onEnter(wxCommandEvent&)
 }
 
 
-void ObjectSettings::onChange(wxSpinDoubleEvent& event)
+void ObjectSettings::onSpinChange(wxSpinDoubleEvent& event)
 {
     int fieldID = event.GetId();
 
-    if (listbox->GetSelection() == wxNOT_FOUND)
+    int selected = listbox->GetSelection();
+
+    if (selected == wxNOT_FOUND)
     {
         textFields[fieldID]->SetValue(0);
         return;
     }
-
-    int selected = listbox->GetSelection();
 
     glm::vec3* pos = graphicsManager->getObjectPosVec(selected);
     glm::vec3* rot = graphicsManager->getObjectRotVec(selected);
@@ -581,6 +597,21 @@ void ObjectSettings::onChange(wxSpinDoubleEvent& event)
         *values[SIZE + 1] = fieldValue;
         *values[SIZE + 2] = fieldValue;
     }
+}
+
+
+void ObjectSettings::onModeChange(wxCommandEvent&)
+{
+    int selected = listbox->GetSelection();
+
+    if (selected == wxNOT_FOUND)
+    {
+        renderModeChoice->SetSelection(wxNOT_FOUND);
+        return;
+    }
+
+    int* mode = graphicsManager->getObjectMode(selected);
+    *mode = renderModeChoice->GetSelection();
 }
 
 

@@ -132,7 +132,7 @@ void GraphicsManager::newObject(std::string file)
             else if (keyword == "f")
             {
                 // keyword vertex1/texture1/normal1 vertex2/texture2/normal2...
-                if ((line.size() - 1) % 3 != 0 || line.size() == 1)
+                if (line.size() == 1)
                     throw std::invalid_argument("The params are missing");
                 
                 faceData = parseFace(vertices->size(), line);
@@ -155,7 +155,7 @@ void GraphicsManager::newObject(std::string file)
             }
             else
             {
-                sendToLog("Unknown keyword: " + keyword);
+                // sendToLog("Unknown keyword: " + keyword);
             }
         }
     }
@@ -283,6 +283,12 @@ glm::vec3* GraphicsManager::getObjectSize(int idx)
 }
 
 
+int* GraphicsManager::getObjectMode(int idx)
+{
+    return &objects[idx]->renderMode;
+}
+
+
 std::vector<std::string> GraphicsManager::getAllObjectNames()
 {
     std::vector<std::string> names;
@@ -373,9 +379,11 @@ std::vector<std::tuple<GLuint, GLuint, GLuint>> GraphicsManager::parseFace(
             
             saveValue = std::stoi(tempValue);
 
-            // faces can be indexed negatively, and are 1-based -> shifted by -1
+            // faces can be indexed negatively, and are 1-based
             if (saveValue < 0)
                 saveValue = vertices + saveValue;
+            else if ((size_t)saveValue >= vertices)
+                throw std::invalid_argument("Invalid vertex index in face");
             else
                 saveValue--;
 
@@ -402,34 +410,155 @@ std::vector<std::tuple<GLuint, GLuint, GLuint>> GraphicsManager::parseFace(
 }
 
 
-// using Bowyer-Watson algorithm
-// https://en.wikipedia.org/wiki/Bowyer%E2%80%93Watson_algorithm
+// using ear-clipping method
+// https://www.geometrictools.com/Documentation/TriangulationByEarClipping.pdf
 void GraphicsManager::triangulate(
     std::vector<std::tuple<GLuint, GLuint, GLuint>>* indices,
-    std::shared_ptr<std::vector<GLfloat>> vertices)
+    std::shared_ptr<std::vector<GLfloat>> allVertices)
 {
-    // TODO: split bigger polygons into triangles
-    throw std::invalid_argument("Triangulation does not work yet");
-    // map is used to index the index list to make the final one
-    std::vector<unsigned int> map;
-
-    // first rotate the plane so it is flush with x and y axes
-
-    std::tuple<glm::vec3, glm::vec3, glm::vec3> superTriangle;
-
-    for (auto vertex : *vertices)
+    struct vertex
     {
+        glm::vec3 pos;
+        unsigned int idx;
+    };
 
+    std::list<vertex> verticesList;
+
+    vertex newVertex;
+    for (size_t i = 0; i < indices->size(); i++)
+    {
+        newVertex.pos = glm::vec3(
+            (*allVertices)[std::get<0>((*indices)[i]) * 3],
+            (*allVertices)[std::get<0>((*indices)[i]) * 3 + 1],
+            (*allVertices)[std::get<0>((*indices)[i]) * 3 + 2]);
+        newVertex.idx = i;
+        verticesList.push_back(newVertex);
+    }
+    std::list<vertex>::iterator it = verticesList.begin();
+
+    std::vector<GLuint> map;
+    glm::vec3 rotationAxis = glm::normalize(
+        glm::cross(it->pos - std::next(it, 1)->pos,
+        std::next(it, 2)->pos - std::next(it, 1)->pos));
+    
+    bool outside, skip;
+    vertex* prev;
+    vertex* next;
+    glm::vec3 vecToPrev, vecToNext, referenceVec, testVec;
+    float referenceAngle, testAngle;
+
+    while (verticesList.size() > 3)
+    {
+        if (it == verticesList.end())
+            it = verticesList.begin();
+
+        std::vector<vertex*> triangleVertices;
+        triangleVertices.push_back(&(*it));
+        if (it == verticesList.begin())
+            triangleVertices.push_back(&(*std::prev(verticesList.end(), 1)));
+        else
+            triangleVertices.push_back(&(*std::prev(it, 1)));
+
+        if (it == std::prev(verticesList.end(), 1))
+            triangleVertices.push_back(&(*verticesList.begin()));
+        else
+            triangleVertices.push_back(&(*std::next(it, 1)));
+
+        // test each vertex if it lies inside the triangle
+        for (std::list<vertex>::iterator testIt = verticesList.begin();
+            testIt != verticesList.end(); testIt++)
+        {
+            skip = false;
+            for (vertex* triangle : triangleVertices)
+                if (testIt->idx == triangle->idx)
+                {
+                    skip = true;
+                    break;
+                }
+            if (skip)
+                continue;
+
+            outside = false;
+
+            for (auto triangleIt = triangleVertices.begin();
+                triangleIt != triangleVertices.end(); triangleIt++)
+            {
+                if (triangleIt == triangleVertices.begin())
+                    prev = *(triangleVertices.end() - 1);
+                else
+                    prev = *(triangleIt - 1);
+
+                if (triangleIt == triangleVertices.end() - 1)
+                    next = *triangleVertices.begin();
+                else
+                    next = *(triangleIt + 1);
+
+                vecToPrev = prev->pos - (*triangleIt)->pos;
+                vecToNext = next->pos - (*triangleIt)->pos;
+
+                referenceVec = glm::normalize(vecToNext);
+
+                referenceAngle = glm::orientedAngle(referenceVec,
+                    glm::normalize(vecToPrev), rotationAxis);
+                if (referenceAngle > glm::pi<float>())
+                {
+                    referenceVec = vecToPrev;
+                    referenceAngle = 2 * glm::pi<float>() - referenceAngle;
+                }
+
+                testVec = testIt->pos - (*triangleIt)->pos;
+
+                testAngle = glm::orientedAngle(
+                    referenceVec, glm::normalize(testVec), rotationAxis);
+                
+                if (testAngle > referenceAngle)
+                {
+                    outside = true;
+                    break;
+                }
+            }
+
+            // if the vert is inside the triangle
+            if (!outside)
+            {
+                it++;
+                goto nextIt;
+            }
+        }
+
+        map.push_back(it->idx);
+
+        if (it == verticesList.begin())
+            map.push_back(std::prev(verticesList.end(), 1)->idx);
+        else
+            map.push_back(std::prev(it, 1)->idx);
+        
+        if (it == std::prev(verticesList.end(), 1))
+            map.push_back(verticesList.begin()->idx);
+        else
+            map.push_back(std::next(it, 1)->idx);
+
+        it = verticesList.erase(it);
+
+        nextIt:;
     }
 
+    // add the last remaining triangle to map
+    for (vertex vert : verticesList)
+        map.push_back(vert.idx);
+
+    size_t indicesOriginalSize = indices->size();
+    for (GLuint idx : map)
+        indices->push_back((*indices)[idx]);
+    indices->erase(indices->begin(), indices->begin() + indicesOriginalSize);
 }
 
 
 glm::mat4 Camera::viewMatrix()
 {
-    toTarget.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    toTarget.x = cos(glm::radians(-yaw)) * cos(glm::radians(pitch));
     toTarget.y = sin(glm::radians(pitch));
-    toTarget.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    toTarget.z = sin(glm::radians(-yaw)) * cos(glm::radians(pitch));
     toTarget = glm::normalize(toTarget) * radius;
 
     return glm::lookAt(target - toTarget, target, upDirection);
@@ -448,8 +577,6 @@ void Camera::move(std::pair<bool, wxPoint> mouseInfo)
     {
         int xMove = previousMousePos.x - mouseInfo.second.x;
         int yMove = previousMousePos.y - mouseInfo.second.y;
-
-        // std::cout << "x: " << xMove << " y: " << yMove << " yaw: " << yaw << " pitch: " << pitch << std::endl;
 
         yaw += mouseSensitivity * xMove;
         pitch += mouseSensitivity * yMove;
