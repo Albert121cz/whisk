@@ -38,7 +38,7 @@ public:
     GraphicsManager(Canvas* parent);
     ~GraphicsManager();
 
-    TextureManager* getTexManagerPtr() {return textures;}
+    TextureManager* getTexManagerPtr() const;
     GLuint getShadersID();
     void render();
     void sendToLog(std::string message);
@@ -74,28 +74,28 @@ private:
 class Camera
 {
 public:
+    Camera();
+
     glm::mat4 viewMatrix();
-    glm::mat4 projectionMatrix(float aspectRatio)
-        {return glm::perspective(glm::radians(fov), aspectRatio, 
-            closeClipBorder, farClipBorder);}
+    glm::mat4 projectionMatrix(float aspectRatio);
     void move(std::pair<bool, wxPoint> mouseInfo);
 
 private:
-    bool mouseMovingPreviousFrame = false;
+    bool mouseMovingPreviousFrame;
     wxPoint previousMousePos;
-    float mouseSensitivity = 0.1f;
+    float mouseSensitivity;
 
-    float yaw = -90.0f;
-    float pitch = 0.0f;
-    float radius = 10.0f;
+    float yaw;
+    float pitch;
+    float radius;
     
-    float fov = 45.0f;
-    float closeClipBorder = 0.1f;
-    float farClipBorder = 100.0f;
+    float fov;
+    float closeClipBorder;
+    float farClipBorder;
 
     glm::vec3 toTarget;
-    glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 upDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 target;
+    glm::vec3 upDirection;
 };
 
 

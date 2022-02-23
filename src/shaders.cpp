@@ -1,9 +1,9 @@
 #include "shaders.hpp"
 
 
-Shader::Shader(GraphicsManager* parent, 
-            const char* shaderFile, const GLenum type)
-            : parentManager(parent), shaderType(type)
+Shader::Shader(GraphicsManager* parent, const char* shaderFile,
+    const GLenum type)
+    : parentManager(parent), shaderType(type)
 {
     initialized = false;
     std::string shaderString = openFile(shaderFile);
@@ -62,6 +62,25 @@ Shader::Shader(GraphicsManager* parent,
 }
 
 
+Shader::~Shader()
+{
+    if (initialized)
+        glDeleteShader(ID);
+}
+
+
+GLuint Shader::getID() const
+{
+    return ID;
+}
+
+
+bool Shader::getInitialized() const
+{
+    return initialized;
+}
+
+
 // https://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
 std::string Shader::openFile(const char *filename)
 {
@@ -80,6 +99,18 @@ std::string Shader::openFile(const char *filename)
 }
 
 
+ShaderManager::ShaderManager(GraphicsManager* parent) : parentManager(parent)
+{
+    ID = glCreateProgram();
+}
+
+
+ShaderManager::~ShaderManager()
+{
+    glDeleteProgram(ID);
+}
+
+
 void ShaderManager::addShader(const char* file)
 {
     std::string fileString(file);
@@ -94,7 +125,7 @@ void ShaderManager::addShader(const char* file)
     {
         vertexShaders.push_back(std::make_unique<Shader>
             (parentManager, file, GL_VERTEX_SHADER));
-        if (!vertexShaders.back()->isInitialized())
+        if (!vertexShaders.back()->getInitialized())
             vertexShaders.pop_back();
     }
 
@@ -102,7 +133,7 @@ void ShaderManager::addShader(const char* file)
     {
         fragmentShaders.push_back(std::make_unique<Shader>
             (parentManager, file, GL_FRAGMENT_SHADER));
-        if (!fragmentShaders.back()->isInitialized())
+        if (!fragmentShaders.back()->getInitialized())
             fragmentShaders.pop_back();
     }
 
@@ -120,10 +151,10 @@ void ShaderManager::addShader(const char* file)
 void ShaderManager::linkProgram()
 {
     for(auto it = vertexShaders.begin(); it != vertexShaders.end(); it++)
-        glAttachShader(ID, (*it)->getShaderID());
+        glAttachShader(ID, (*it)->getID());
 
     for(auto it = fragmentShaders.begin(); it != fragmentShaders.end(); it++)
-        glAttachShader(ID, (*it)->getShaderID());
+        glAttachShader(ID, (*it)->getID());
 
     glLinkProgram(ID);
 
@@ -151,4 +182,9 @@ void ShaderManager::linkProgram()
 void ShaderManager::useProgram()
 {
     glUseProgram(ID);
+}
+
+GLuint ShaderManager::getID() const
+{
+    return ID;
 }

@@ -55,6 +55,12 @@ GraphicsManager::~GraphicsManager()
 }
 
 
+TextureManager* GraphicsManager::getTexManagerPtr() const
+{
+    return textures;
+}
+
+
 GLuint GraphicsManager::getShadersID() 
 {
     return shaders->getID();
@@ -554,6 +560,24 @@ void GraphicsManager::triangulate(
 }
 
 
+Camera::Camera()
+{
+    mouseMovingPreviousFrame = false;
+    mouseSensitivity = 0.1f;
+
+    yaw = -90.0f;
+    pitch = 0.0f;
+    radius = 10.0f;
+
+    fov = 45.0f;
+    closeClipBorder = 0.1f;
+    farClipBorder = 100.0f;
+
+    target = glm::vec3(0.0f, 0.0f, 0.0f);
+    upDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+}
+
+
 glm::mat4 Camera::viewMatrix()
 {
     toTarget.x = cos(glm::radians(-yaw)) * cos(glm::radians(pitch));
@@ -562,6 +586,13 @@ glm::mat4 Camera::viewMatrix()
     toTarget = glm::normalize(toTarget) * radius;
 
     return glm::lookAt(target - toTarget, target, upDirection);
+}
+
+
+glm::mat4 Camera::projectionMatrix(float aspectRatio)
+{
+    return glm::perspective(
+        glm::radians(fov), aspectRatio, closeClipBorder, farClipBorder);
 }
 
 

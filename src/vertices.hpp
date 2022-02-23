@@ -9,8 +9,6 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 
-#define DEFAULT_COLOR 1.0f, 0.0f, 0.0f
-
 class GraphicsManager;
 class TextureManager;
 
@@ -18,52 +16,46 @@ template <typename T>
 class Buffer
 {
 public:
-    Buffer(GraphicsManager* parent, GLenum type) 
-        : parentManager(parent), bufferType(type) {glCreateBuffers(1, &ID);}
+    Buffer(GraphicsManager* parent, GLenum type);
     Buffer(const Buffer& old);
-    ~Buffer() {glDeleteBuffers(1, &ID); delete[] dataStored;}
+    ~Buffer();
 
     void sendData(T* data, GLsizei size);
-    GLenum getType() {return bufferType;}
-    GLuint getID() {return ID;}
+    GLenum getType();
+    GLuint getID();
 
 protected:
     GLuint ID;
     GraphicsManager* parentManager;
     GLenum bufferType;
     T* dataStored;
-    GLsizei dataStoredSize = 0;
+    GLsizei dataStoredSize;
 };
 
 class VertexBuffer : public Buffer<GLfloat>
 {
 public:
-    VertexBuffer(GraphicsManager* parent)
-        : Buffer<GLfloat>(parent, GL_ARRAY_BUFFER){};
+    VertexBuffer(GraphicsManager* parent);
 };
 
 
 class ElementBuffer : public Buffer<GLuint>
 {
 public:
-    ElementBuffer(GraphicsManager* parent)
-        : Buffer<GLuint>(parent, GL_ELEMENT_ARRAY_BUFFER){};
+    ElementBuffer(GraphicsManager* parent);
 };
 
 
 class VertexArray
 {
 public:
-    VertexArray(GraphicsManager* parent) : parentManager(parent) 
-        {glGenVertexArrays(1, &ID);}
-    ~VertexArray() {glDeleteVertexArrays(1, &ID);}
+    VertexArray(GraphicsManager* parent);
+    ~VertexArray();
 
-    void link(Buffer<GLfloat>* buffer)
-        {buffers.push_back(std::pair(buffer->getType(), buffer->getID()));}
-    void link(Buffer<GLuint>* buffer)
-        {buffers.push_back(std::pair(buffer->getType(), buffer->getID()));}
+    void link(Buffer<GLfloat>* buffer);
+    void link(Buffer<GLuint>* buffer);
     void enable();
-    void bind() {glBindVertexArray(ID);}
+    void bind();
 
 private:
     GLuint ID;
@@ -93,20 +85,19 @@ private:
 class Object
 {
 public:
-    bool show = true;
+    bool show;
     std::string objectName;
-    glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 size = glm::vec3(1.0f, 1.0f, 1.0f);
-    int renderMode = 0;
+    glm::vec3 position;
+    glm::vec3 rotation;
+    glm::vec3 size;
+    int renderMode;
 
     Object(GraphicsManager* parent, TextureManager* textures, std::string name,
         GLfloat* vert, size_t vertSize, GLuint* indices, size_t indSize);
     ~Object();
     Object(const Object& oldObject);
 
-    void setColor(GLfloat r, GLfloat g, GLfloat b) 
-        {color[0] = r; color[1] = g; color[2] = b;}
+    void setColor(GLfloat r, GLfloat g, GLfloat b);
     // TODO: link texture with object - needs texture menu (wxListBox)
     void setTexture(unsigned int idx);
     void draw();
@@ -124,7 +115,7 @@ private:
     GLfloat* combinedData;
 
     GLuint64 texHandle;
-    GLfloat color[3] = {DEFAULT_COLOR};
+    GLfloat color[3];
     glm::mat4 model;
 
     enum RenderMode

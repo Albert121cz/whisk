@@ -61,17 +61,17 @@ private:
     #endif /* DEBUG */
     Canvas* canvas;
 
-    enum Event
-    {
-        LOAD_OBJ,
-        LOAD_TEX
-    };
-
     void onObjLoad(wxCommandEvent&);
     void onTexLoad(wxCommandEvent&);
     void onAbout(wxCommandEvent&);
     void onExit(wxCommandEvent&);
     void onClose(wxCloseEvent& event);
+
+    enum Event
+    {
+        LOAD_OBJ,
+        LOAD_TEX
+    };
 
     wxDECLARE_EVENT_TABLE();
 };
@@ -113,7 +113,7 @@ class SidePanelRefreshTimer : public wxTimer
 public:
     SidePanelRefreshTimer(std::shared_ptr<GraphicsManager> manager,
         ObjectSettings* settings, wxCheckListBox* list);
-    ~SidePanelRefreshTimer() {Stop();}
+    ~SidePanelRefreshTimer();
     virtual void Notify() override;
 
 private:
@@ -121,7 +121,7 @@ private:
     ObjectSettings* objectSettings;
     wxCheckListBox* listbox;
     wxArrayString names;
-    int lastSelected = wxNOT_FOUND;
+    int lastSelected;
 };
 
 
@@ -179,7 +179,7 @@ private:
     RenameFrame* parentFrame;
 
     void onOk(wxCommandEvent&);
-    void onCancel(wxCommandEvent&) {parentFrame->Close();}
+    void onCancel(wxCommandEvent&);
 
     wxDECLARE_EVENT_TABLE();
 };
@@ -228,43 +228,38 @@ class Canvas : public wxGLCanvas
 {
 public:
     Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs);
-    ~Canvas() {done = true; delete wxGLCtx;}
+    ~Canvas();
 
-    bool wxGLCtxExists() {return wxGLCtx != NULL;}
-    bool graphicsManagerExists() {return (graphicsManager) ? true : false;}
+    bool wxGLCtxExists();
+    bool graphicsManagerExists();
     void flip();
     void addTex(const unsigned char* data, int width, int height);
     float viewportAspectRatio();
     void log(std::string str);
     bool extCheck(std::pair<bool, std::string> in);
-    std::shared_ptr<GraphicsManager> getGraphicsManager()
-        {return graphicsManager;}
-    std::pair<bool, wxPoint> getCameraMouseInfo()
-        {return std::make_pair(cameraMoving, wxGetMousePosition());}
-    
-    bool done = false;
+    std::shared_ptr<GraphicsManager> getGraphicsManager();
+    std::pair<bool, wxPoint> getCameraMouseInfo();
 
 private:
     MainFrame* parentFrame;
-    wxGLContext* wxGLCtx = nullptr;
-    std::shared_ptr<GraphicsManager> graphicsManager = {};
-    bool debuggingExt = false;
+    wxGLContext* wxGLCtx;
+    std::shared_ptr<GraphicsManager> graphicsManager;
+    bool done;
+    bool debuggingExt;
     std::pair<int, int> viewportDims;
-    bool cameraMoving = false;
+    bool cameraMoving;
     wxPoint mousePos;
     wxEvent* renderEvent;
     std::chrono::steady_clock::time_point lastFlip;
-    const float FPSSmoothing = 0.9f;
-    float FPS = 0.0f;
+    float FPSSmoothing;
+    float FPS;
     
     void onRender(wxCommandEvent&);
     void onClose(wxCloseEvent&);
     void onPaint(wxPaintEvent&);
     void onSize(wxSizeEvent&);
-    void onLeavingWindow(wxMouseEvent&) {cameraMoving = false;}
     void onRMBDown(wxMouseEvent&);
-    void onRMBUp(wxMouseEvent&) {cameraMoving = false;}
-
+    void onRMBUp(wxMouseEvent&);
 
     wxDECLARE_EVENT_TABLE();
 };

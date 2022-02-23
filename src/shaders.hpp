@@ -19,12 +19,11 @@ class GraphicsManager;
 class Shader
 {
 public:
-    Shader(GraphicsManager* parent, 
-        const char* shaderFile, const GLenum type);
-    ~Shader() {if (initialized) glDeleteShader(ID);}
+    Shader(GraphicsManager* parent, const char* shaderFile, const GLenum type);
+    ~Shader();
 
-    GLuint getShaderID() {return ID;}
-    bool isInitialized() {return initialized;}
+    GLuint getID() const;
+    bool getInitialized() const;
 
 private:
     GLuint ID;
@@ -38,14 +37,13 @@ private:
 class ShaderManager
 {
 public:
-    ShaderManager(GraphicsManager* parent) : parentManager(parent)
-                    {ID = glCreateProgram();}
-    ~ShaderManager() {glDeleteProgram(ID);}
+    ShaderManager(GraphicsManager* parent);
+    ~ShaderManager();
 
     void addShader(const char* file);
     void linkProgram();
     void useProgram();
-    GLuint getID() {return ID;}
+    GLuint getID() const;
 
 private:
     GLuint ID;

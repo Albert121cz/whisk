@@ -235,7 +235,14 @@ SidePanelRefreshTimer::SidePanelRefreshTimer(
     wxCheckListBox* list)
     : graphicsManager(manager), objectSettings(settings), listbox(list)
 {
+    lastSelected = wxNOT_FOUND;
     StartOnce(48);
+}
+
+
+SidePanelRefreshTimer::~SidePanelRefreshTimer()
+{
+    Stop();
 }
 
 
@@ -433,6 +440,12 @@ void RenameFrameButtonPanel::onOk(wxCommandEvent&)
 }
 
 
+void RenameFrameButtonPanel::onCancel(wxCommandEvent&)
+{
+    parentFrame->Close();
+}
+
+
 wxBEGIN_EVENT_TABLE(ObjectSettings, wxPanel)
     EVT_COMMAND(wxID_ANY, REFRESH_OBJECT_SETTINGS, ObjectSettings::onRefresh)
     EVT_TEXT_ENTER(wxID_ANY, ObjectSettings::onEnter)
@@ -622,7 +635,7 @@ wxBEGIN_EVENT_TABLE(Canvas, wxGLCanvas)
     EVT_CLOSE(Canvas::onClose)
     EVT_PAINT(Canvas::onPaint)
     EVT_SIZE(Canvas::onSize)
-    EVT_LEAVE_WINDOW(Canvas::onLeavingWindow)
+    EVT_LEAVE_WINDOW(Canvas::onRMBUp)
     EVT_RIGHT_DOWN(Canvas::onRMBDown)
     EVT_RIGHT_UP(Canvas::onRMBUp)
 wxEND_EVENT_TABLE()
@@ -632,6 +645,14 @@ wxEND_EVENT_TABLE()
 Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
       : wxGLCanvas(parent, canvasAttrs), parentFrame(parent)
 {
+    wxGLCtx = nullptr;
+    graphicsManager = nullptr;
+    done = false;
+    debuggingExt = false;
+    cameraMoving = false;
+    FPSSmoothing = 0.9f;
+    FPS = 0.0f;
+
     wxGLContextAttrs ctxAttrs;
     ctxAttrs.PlatformDefaults().OGLVersion(OGL_MAJOR_VERSION,
                                             OGL_MINOR_VERSION).EndList();
@@ -690,6 +711,28 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
 }
 
 
+Canvas::~Canvas()
+{
+    done = true;
+    delete wxGLCtx;
+}
+
+
+bool Canvas::wxGLCtxExists()
+{
+    return wxGLCtx != nullptr;
+}
+
+
+bool Canvas::graphicsManagerExists()
+{
+    if (graphicsManager)
+        return true;
+    else
+        return false;
+}
+
+
 void Canvas::flip()
 {
     wxClientDC dc(this);
@@ -733,6 +776,18 @@ bool Canvas::extCheck(std::pair<bool, std::string> in)
         wxMessageBox(msg, "Initialization error", wxOK | wxICON_ERROR, this);
         return false;
     }
+}
+
+
+std::shared_ptr<GraphicsManager> Canvas::getGraphicsManager()
+{
+    return graphicsManager;
+}
+
+
+std::pair<bool, wxPoint> Canvas::getCameraMouseInfo()
+{
+    return std::make_pair(cameraMoving, wxGetMousePosition());
 }
 
 
@@ -789,4 +844,10 @@ void Canvas::onRMBDown(wxMouseEvent&)
 {
     cameraMoving = true;
     mousePos = wxGetMousePosition();
+}
+
+
+void Canvas::onRMBUp(wxMouseEvent&)
+{
+    cameraMoving = false;
 }

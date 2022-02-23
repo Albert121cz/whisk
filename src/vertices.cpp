@@ -2,9 +2,17 @@
 
 
 template <typename T>
+Buffer<T>::Buffer(GraphicsManager* parent, GLenum type)
+    : parentManager(parent), bufferType(type)
+{
+    dataStoredSize = 0;
+    glCreateBuffers(1, &ID);
+}
+
+
+template <typename T>
 Buffer<T>::Buffer(const Buffer& old)
 {
-    
     parentManager = old.parentManager;
     bufferType = old.bufferType;
     dataStoredSize = old.dataStoredSize;
@@ -15,6 +23,14 @@ Buffer<T>::Buffer(const Buffer& old)
 
     glCreateBuffers(1, &ID);
     glNamedBufferData(ID, dataStoredSize*sizeof(T), dataStored, GL_STATIC_DRAW);
+}
+
+
+template <typename T>
+Buffer<T>::~Buffer()
+{
+    glDeleteBuffers(1, &ID);
+    delete[] dataStored;
 }
 
 
@@ -32,6 +48,44 @@ void Buffer<T>::sendData(T* data, GLsizei size)
         dataStored[i] = data[i];
 
     glNamedBufferData(ID, size, data, GL_STATIC_DRAW);
+}
+
+
+template <typename T>
+GLenum Buffer<T>::getType()
+{
+    return bufferType;
+}
+
+
+template <typename T>
+GLuint Buffer<T>::getID()
+{
+    return ID;
+}
+
+
+VertexBuffer::VertexBuffer(GraphicsManager* parent)
+    : Buffer<GLfloat>(parent, GL_ARRAY_BUFFER)
+{
+}
+
+
+ElementBuffer::ElementBuffer(GraphicsManager* parent)
+    : Buffer<GLuint>(parent, GL_ELEMENT_ARRAY_BUFFER)
+{
+}
+
+
+VertexArray::VertexArray(GraphicsManager* parent) : parentManager(parent) 
+{
+    glGenVertexArrays(1, &ID);
+}
+
+
+VertexArray::~VertexArray()
+{
+    glDeleteVertexArrays(1, &ID);
 }
 
 
@@ -62,6 +116,23 @@ void VertexArray::enable()
     // unbind linked buffers
     for (auto it = buffers.begin(); it != buffers.end(); it++)
         glBindBuffer((*it).first, 0);
+}
+
+void VertexArray::link(Buffer<GLfloat>* buffer)
+{
+    buffers.push_back(std::pair(buffer->getType(), buffer->getID()));
+}
+
+
+void VertexArray::link(Buffer<GLuint>* buffer)
+{
+    buffers.push_back(std::pair(buffer->getType(), buffer->getID()));
+}
+
+
+void VertexArray::bind()
+{
+    glBindVertexArray(ID);
 }
 
 
@@ -101,6 +172,15 @@ Object::Object(GraphicsManager* parent, TextureManager* textures,
     :  objectName(name), parentManager(parent), texManager(textures),
     indicesLen(indSize/sizeof(GLuint))
 {
+    show = true;
+    position = glm::vec3(0.0f, 0.0f, 0.0f);
+    rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+    size = glm::vec3(1.0f, 1.0f, 1.0f);
+    renderMode = FILL;
+    color[0] = 1.0f;
+    color[1] = 0.0f;
+    color[2] = 0.0f;
+
 // combined array includes position of vertices (x, y, z), colors of vertices
 // without texture (r, g, b), position of vertices in texture (s, t)
     int verticesLen = vertSize/sizeof(GLfloat);
@@ -167,6 +247,14 @@ Object::Object(const Object& old)
     vertexArray->link(vertexBuffer);
     vertexArray->link(elementBuffer);
     vertexArray->enable();
+}
+
+
+void Object::setColor(GLfloat r, GLfloat g, GLfloat b) 
+{
+    color[0] = r;
+    color[1] = g;
+    color[2] = b;
 }
 
 
