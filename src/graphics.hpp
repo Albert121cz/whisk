@@ -43,7 +43,9 @@ public:
     void render();
     void sendToLog(std::string message);
     void setUniformMatrix(glm::mat4 mat, const char* name);
-    void newObject(std::string file);
+    void newObject(std::string file, size_t startLine = 0,
+        std::shared_ptr<std::vector<std::vector<std::string>>> data = nullptr,
+        std::shared_ptr<std::vector<GLfloat>> vertices = nullptr);
     void renameObject(int idx, std::string newName);
     void duplicateObject(int idx);
     void deleteObject(int idx);

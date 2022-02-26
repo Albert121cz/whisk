@@ -59,7 +59,6 @@ MainFrame::MainFrame(const wxString& title,
     SetMenuBar(menuBar);
 
     CreateStatusBar(2);
-    SetStatusText("No file loaded");
 
     wxGLAttributes glDefAttrs;
     glDefAttrs.PlatformDefaults().Defaults().EndList();
@@ -214,7 +213,7 @@ ObjectPanel::ObjectPanel(SidePanel* parent, MainFrame* main,
     wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 
     listbox = new wxCheckListBox(this, wxID_ANY);
-    sizer->Add(listbox, 4, wxEXPAND | wxALL, 5);
+    sizer->Add(listbox, 3, wxEXPAND | wxALL, 5);
 
     buttons = new ObjectButtonPanel(graphicsManager, this, main, listbox);
     sizer->Add(buttons, 1, wxEXPAND | wxRIGHT, 5);
@@ -382,6 +381,7 @@ RenameFrame::RenameFrame(MainFrame* parent,
 
     textField = new wxTextCtrl(this, wxID_ANY, manager->getObjectName(idx),
         wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+    textField->SetMaxLength(24);
     sizer->Add(textField, 0, wxEXPAND);
 
     RenameFrameButtonPanel* buttons = new RenameFrameButtonPanel(this);
@@ -635,9 +635,9 @@ wxBEGIN_EVENT_TABLE(Canvas, wxGLCanvas)
     EVT_CLOSE(Canvas::onClose)
     EVT_PAINT(Canvas::onPaint)
     EVT_SIZE(Canvas::onSize)
-    EVT_LEAVE_WINDOW(Canvas::onRMBUp)
-    EVT_RIGHT_DOWN(Canvas::onRMBDown)
-    EVT_RIGHT_UP(Canvas::onRMBUp)
+    EVT_LEAVE_WINDOW(Canvas::onLMBUp)
+    EVT_LEFT_DOWN(Canvas::onLMBDown)
+    EVT_LEFT_UP(Canvas::onLMBUp)
 wxEND_EVENT_TABLE()
 
 
@@ -840,14 +840,14 @@ void Canvas::onSize(wxSizeEvent&)
 }
 
 
-void Canvas::onRMBDown(wxMouseEvent&)
+void Canvas::onLMBDown(wxMouseEvent&)
 {
     cameraMoving = true;
     mousePos = wxGetMousePosition();
 }
 
 
-void Canvas::onRMBUp(wxMouseEvent&)
+void Canvas::onLMBUp(wxMouseEvent&)
 {
     cameraMoving = false;
 }

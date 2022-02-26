@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 #include <chrono>
+#include <thread>
 
 // must be defined for wxCheckListBox to work
 #define wxUSE_OWNER_DRAWN 1
@@ -258,8 +259,8 @@ private:
     void onClose(wxCloseEvent&);
     void onPaint(wxPaintEvent&);
     void onSize(wxSizeEvent&);
-    void onRMBDown(wxMouseEvent&);
-    void onRMBUp(wxMouseEvent&);
+    void onLMBDown(wxMouseEvent&);
+    void onLMBUp(wxMouseEvent&);
 
     wxDECLARE_EVENT_TABLE();
 };

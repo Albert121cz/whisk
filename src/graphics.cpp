@@ -108,22 +108,31 @@ void GraphicsManager::setUniformMatrix(glm::mat4 mat, const char* name)
 }
 
 
-void GraphicsManager::newObject(std::string file)
+void GraphicsManager::newObject(std::string file, size_t startLine,
+    std::shared_ptr<std::vector<std::vector<std::string>>> data,
+    std::shared_ptr<std::vector<GLfloat>> vertices)
 {
-    std::vector<std::vector<std::string>> data = parseFile(file);
+    if (data == nullptr)
+        data = std::make_shared<std::vector<std::vector<std::string>>>(
+            parseFile(file));
 
     std::string keyword;
     std::vector<std::tuple<GLuint, GLuint, GLuint>> faceData;
 
-    std::shared_ptr<std::vector<GLfloat>> vertices(new std::vector<GLfloat>());
+    if (vertices == nullptr)
+        vertices = std::make_shared<std::vector<GLfloat>>();
     std::shared_ptr<std::vector<GLuint>> indices(new std::vector<GLuint>());
 
     std::string name = "New Object";
+    bool nameModified = false;
+
+    std::vector<std::string> line;
 
     try
     {
-        for (std::vector<std::string> line : data)
+        for (size_t lineIdx = startLine; lineIdx < data->size(); lineIdx++)
         {
+            line = data->at(lineIdx);
             keyword = line.front();
             
             if (keyword == "v")
@@ -154,10 +163,17 @@ void GraphicsManager::newObject(std::string file)
                 // keyword partofname1 partofname2...
                 if (line.size() == 1)
                     throw std::invalid_argument("The name is missing");
+                
+                if (nameModified)
+                {
+                    newObject(file, lineIdx, data, vertices);
+                    break;
+                }
 
                 name.clear();
                 for (size_t i = 1; i < line.size(); i++)
                     name += line[i];
+                nameModified = true;
             }
             else
             {
@@ -171,9 +187,13 @@ void GraphicsManager::newObject(std::string file)
         return;
     }
 
+    // the name has to fit inside the wxCheckListBox
+    if (name.size() > 24)
+        name.resize(24);
+
     objects.push_back(std::make_unique<Object>(this, textures, name,
     vertices->data(), vertices->size() * sizeof(GLfloat),
-    indices->data(), indices->size() * sizeof(GLfloat)));
+    indices->data(), indices->size() * sizeof(GLuint)));
     
     #ifdef DEBUG
         std::ostringstream messageStream;
@@ -426,20 +446,34 @@ void GraphicsManager::triangulate(
     {
         glm::vec3 pos;
         unsigned int idx;
+        vertex(glm::vec3 vec, unsigned int index) : pos(vec), idx(index) {}
     };
 
     std::list<vertex> verticesList;
 
-    vertex newVertex;
     for (size_t i = 0; i < indices->size(); i++)
     {
-        newVertex.pos = glm::vec3(
-            (*allVertices)[std::get<0>((*indices)[i]) * 3],
-            (*allVertices)[std::get<0>((*indices)[i]) * 3 + 1],
-            (*allVertices)[std::get<0>((*indices)[i]) * 3 + 2]);
-        newVertex.idx = i;
-        verticesList.push_back(newVertex);
+        verticesList.push_back(vertex(glm::vec3(
+            allVertices->at(std::get<0>(indices->at(i)) * 3),
+            allVertices->at(std::get<0>(indices->at(i)) * 3 + 1),
+            allVertices->at(std::get<0>(indices->at(i)) * 3 + 2)), i));
     }
+    
+    std::list<vertex>::iterator delIt = verticesList.begin();
+    std::list<vertex>::iterator checkIt;
+    while (delIt != verticesList.end())
+    {
+        checkIt = verticesList.begin();
+        while (checkIt != verticesList.end())
+        {
+            if (delIt->pos == checkIt->pos && delIt->idx != checkIt->idx)
+                checkIt = verticesList.erase(checkIt);
+            else
+                checkIt++;
+        }
+        delIt++;
+    }
+
     std::list<vertex>::iterator it = verticesList.begin();
 
     std::vector<GLuint> map;
@@ -448,8 +482,8 @@ void GraphicsManager::triangulate(
         std::next(it, 2)->pos - std::next(it, 1)->pos));
     
     bool outside, skip;
-    vertex* prev;
-    vertex* next;
+    std::vector<vertex> triangleVertices;
+    std::vector<vertex>::iterator prev, next;
     glm::vec3 vecToPrev, vecToNext, referenceVec, testVec;
     float referenceAngle, testAngle;
 
@@ -458,25 +492,26 @@ void GraphicsManager::triangulate(
         if (it == verticesList.end())
             it = verticesList.begin();
 
-        std::vector<vertex*> triangleVertices;
-        triangleVertices.push_back(&(*it));
+        triangleVertices.clear();
         if (it == verticesList.begin())
-            triangleVertices.push_back(&(*std::prev(verticesList.end(), 1)));
+            triangleVertices.push_back(*std::prev(verticesList.end(), 1));
         else
-            triangleVertices.push_back(&(*std::prev(it, 1)));
+            triangleVertices.push_back(*std::prev(it, 1));
+        
+        triangleVertices.push_back(*it);
 
         if (it == std::prev(verticesList.end(), 1))
-            triangleVertices.push_back(&(*verticesList.begin()));
+            triangleVertices.push_back(*verticesList.begin());
         else
-            triangleVertices.push_back(&(*std::next(it, 1)));
+            triangleVertices.push_back(*std::next(it, 1));
 
         // test each vertex if it lies inside the triangle
         for (std::list<vertex>::iterator testIt = verticesList.begin();
             testIt != verticesList.end(); testIt++)
         {
             skip = false;
-            for (vertex* triangle : triangleVertices)
-                if (testIt->idx == triangle->idx)
+            for (vertex triangle : triangleVertices)
+                if (testIt->idx == triangle.idx)
                 {
                     skip = true;
                     break;
@@ -490,17 +525,20 @@ void GraphicsManager::triangulate(
                 triangleIt != triangleVertices.end(); triangleIt++)
             {
                 if (triangleIt == triangleVertices.begin())
-                    prev = *(triangleVertices.end() - 1);
+                    // prev = triangleVertices.end() - 1;
+                    prev = std::prev(triangleVertices.end(), 1);
                 else
-                    prev = *(triangleIt - 1);
+                    // prev = triangleIt - 1;
+                    prev = std::prev(triangleIt, 1);
 
                 if (triangleIt == triangleVertices.end() - 1)
-                    next = *triangleVertices.begin();
+                    next = triangleVertices.begin();
                 else
-                    next = *(triangleIt + 1);
+                    // next = triangleIt + 1;
+                    next = std::next(triangleIt, 1);
 
-                vecToPrev = prev->pos - (*triangleIt)->pos;
-                vecToNext = next->pos - (*triangleIt)->pos;
+                vecToPrev = prev->pos - triangleIt->pos;
+                vecToNext = next->pos - triangleIt->pos;
 
                 referenceVec = glm::normalize(vecToNext);
 
@@ -508,11 +546,11 @@ void GraphicsManager::triangulate(
                     glm::normalize(vecToPrev), rotationAxis);
                 if (referenceAngle > glm::pi<float>())
                 {
-                    referenceVec = vecToPrev;
+                    referenceVec = glm::normalize(vecToPrev);
                     referenceAngle = 2 * glm::pi<float>() - referenceAngle;
                 }
 
-                testVec = testIt->pos - (*triangleIt)->pos;
+                testVec = testIt->pos - triangleIt->pos;
 
                 testAngle = glm::orientedAngle(
                     referenceVec, glm::normalize(testVec), rotationAxis);
@@ -550,8 +588,9 @@ void GraphicsManager::triangulate(
     }
 
     // add the last remaining triangle to map
-    for (vertex vert : verticesList)
-        map.push_back(vert.idx);
+    if (verticesList.size() == 3)
+        for (vertex vert : verticesList)
+            map.push_back(vert.idx);
 
     size_t indicesOriginalSize = indices->size();
     for (GLuint idx : map)
