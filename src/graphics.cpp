@@ -74,7 +74,7 @@ void GraphicsManager::render()
 
     shaders->useProgram();
 
-    camera->move(parentCanvas->getCameraMouseInfo());
+    camera->move(parentCanvas->getMouseInfo());
 
     setUniformMatrix(camera->viewMatrix(), "view");
     setUniformMatrix(camera->projectionMatrix(
@@ -93,12 +93,10 @@ void GraphicsManager::render()
 }
 
 
-#ifdef DEBUG
-    void GraphicsManager::sendToLog(std::string message)
-    {
-        parentCanvas->log(message);
-    }
-#endif /* DEBUG */
+void GraphicsManager::sendToLog(std::string message)
+{
+    parentCanvas->log(message);
+}
 
 
 void GraphicsManager::setUniformMatrix(glm::mat4 mat, const char* name)
@@ -601,8 +599,14 @@ void GraphicsManager::triangulate(
 
 Camera::Camera()
 {
-    mouseMovingPreviousFrame = false;
-    mouseSensitivity = 0.1f;
+    cameraSpinningPrevFrame = false;
+    cameraMovingPrevFrame = false;
+    spinSensitivity = 0.15f;
+    moveSensitivity = 0.01f;
+    scrollSensitivity = 0.00005f;
+
+    horizMove = 0.0f;
+    vertiMove = 0.0f;
 
     yaw = -90.0f;
     pitch = 0.0f;
@@ -619,10 +623,21 @@ Camera::Camera()
 
 glm::mat4 Camera::viewMatrix()
 {
+    if (pitch > 90)
+        pitch = std::nextafterf(90.0f, 0.0f);
+    else if (pitch < -90)
+        pitch = -std::nextafterf(90.0f, 0.0f);
+    
+    if (radius < 0)
+        radius = 1.0f;
+
     toTarget.x = cos(glm::radians(-yaw)) * cos(glm::radians(pitch));
     toTarget.y = sin(glm::radians(pitch));
     toTarget.z = sin(glm::radians(-yaw)) * cos(glm::radians(pitch));
     toTarget = glm::normalize(toTarget) * radius;
+
+    target += glm::normalize(glm::cross(toTarget, upDirection)) * horizMove;
+    target -= glm::normalize(upDirection) * vertiMove;
 
     return glm::lookAt(target - toTarget, target, upDirection);
 }
@@ -635,23 +650,40 @@ glm::mat4 Camera::projectionMatrix(float aspectRatio)
 }
 
 
-void Camera::move(std::pair<bool, wxPoint> mouseInfo)
+void Camera::move(MouseInfo info)
 {
-    if (!mouseInfo.first)
-    {
-        mouseMovingPreviousFrame = false;
-        return;
-    }
+    radius += scrollSensitivity * (previousWheelPos - info.wheelPos);
+    previousWheelPos = info.wheelPos;
     
-    if (mouseMovingPreviousFrame)
+    if (info.spinning)
     {
-        int xMove = previousMousePos.x - mouseInfo.second.x;
-        int yMove = previousMousePos.y - mouseInfo.second.y;
+        if (cameraSpinningPrevFrame)
+        {
+            yaw += spinSensitivity * (prevMousePos.x - info.mousePos.x);
+            pitch += spinSensitivity * (prevMousePos.y - info.mousePos.y);
+        }
 
-        yaw += mouseSensitivity * xMove;
-        pitch += mouseSensitivity * yMove;
+        prevMousePos = info.mousePos;
+        cameraSpinningPrevFrame = true;
     }
+    else
+        cameraSpinningPrevFrame = false;
 
-    previousMousePos = mouseInfo.second;
-    mouseMovingPreviousFrame = true;
+    if (info.moving)
+    {
+        if (cameraMovingPrevFrame)
+        {
+            horizMove = moveSensitivity * (prevMousePos.x - info.mousePos.x);
+            vertiMove = moveSensitivity * (prevMousePos.y - info.mousePos.y);
+        }
+
+        prevMousePos = info.mousePos;
+        cameraMovingPrevFrame = true;
+    }
+    else
+    {
+        horizMove = 0;
+        vertiMove = 0;
+        cameraMovingPrevFrame = false;
+    }
 }

@@ -30,6 +30,7 @@ class ElementBuffer;
 class VertexArray;
 class Camera;
 class Object;
+struct MouseInfo;
 
 
 class GraphicsManager
@@ -80,12 +81,19 @@ public:
 
     glm::mat4 viewMatrix();
     glm::mat4 projectionMatrix(float aspectRatio);
-    void move(std::pair<bool, wxPoint> mouseInfo);
+    void move(MouseInfo info);
 
 private:
-    bool mouseMovingPreviousFrame;
-    wxPoint previousMousePos;
-    float mouseSensitivity;
+    bool cameraSpinningPrevFrame;
+    bool cameraMovingPrevFrame;
+    wxPoint prevMousePos;
+    float spinSensitivity;
+    float moveSensitivity;
+    float scrollSensitivity;
+    int previousWheelPos = 0;
+
+    float horizMove;
+    float vertiMove;
 
     float yaw;
     float pitch;

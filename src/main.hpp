@@ -225,6 +225,14 @@ private:
 };
 
 
+struct MouseInfo
+{
+    bool spinning;
+    bool moving;
+    wxPoint mousePos;
+    int wheelPos;
+};
+
 class Canvas : public wxGLCanvas
 {
 public:
@@ -239,7 +247,7 @@ public:
     void log(std::string str);
     bool extCheck(std::pair<bool, std::string> in);
     std::shared_ptr<GraphicsManager> getGraphicsManager();
-    std::pair<bool, wxPoint> getCameraMouseInfo();
+    MouseInfo getMouseInfo();
 
 private:
     MainFrame* parentFrame;
@@ -248,8 +256,9 @@ private:
     bool done;
     bool debuggingExt;
     std::pair<int, int> viewportDims;
+    bool cameraSpinning;
     bool cameraMoving;
-    wxPoint mousePos;
+    int mouseWheelPos;
     wxEvent* renderEvent;
     std::chrono::steady_clock::time_point lastFlip;
     float FPSSmoothing;
@@ -261,6 +270,9 @@ private:
     void onSize(wxSizeEvent&);
     void onLMBDown(wxMouseEvent&);
     void onLMBUp(wxMouseEvent&);
+    void onRMBDown(wxMouseEvent&);
+    void onRMBUp(wxMouseEvent&);
+    void onWheel(wxMouseEvent& event);
 
     wxDECLARE_EVENT_TABLE();
 };

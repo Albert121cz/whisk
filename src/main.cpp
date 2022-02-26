@@ -636,8 +636,12 @@ wxBEGIN_EVENT_TABLE(Canvas, wxGLCanvas)
     EVT_PAINT(Canvas::onPaint)
     EVT_SIZE(Canvas::onSize)
     EVT_LEAVE_WINDOW(Canvas::onLMBUp)
+    EVT_LEAVE_WINDOW(Canvas::onRMBUp)
     EVT_LEFT_DOWN(Canvas::onLMBDown)
     EVT_LEFT_UP(Canvas::onLMBUp)
+    EVT_RIGHT_DOWN(Canvas::onRMBDown)
+    EVT_RIGHT_UP(Canvas::onRMBUp)
+    EVT_MOUSEWHEEL(Canvas::onWheel)
 wxEND_EVENT_TABLE()
 
 
@@ -649,7 +653,9 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
     graphicsManager = nullptr;
     done = false;
     debuggingExt = false;
+    cameraSpinning = false;
     cameraMoving = false;
+    mouseWheelPos = 0;
     FPSSmoothing = 0.9f;
     FPS = 0.0f;
 
@@ -658,7 +664,7 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
                                             OGL_MINOR_VERSION).EndList();
     wxGLCtx = new wxGLContext(this, NULL, &ctxAttrs);
 
-    if ( !wxGLCtx->IsOK() )
+    if (!wxGLCtx->IsOK())
     {
         wxString msg_out;
         msg_out.Printf("The graphics driver failed to initialize OpenGL v%i.%i",
@@ -785,9 +791,14 @@ std::shared_ptr<GraphicsManager> Canvas::getGraphicsManager()
 }
 
 
-std::pair<bool, wxPoint> Canvas::getCameraMouseInfo()
+MouseInfo Canvas::getMouseInfo()
 {
-    return std::make_pair(cameraMoving, wxGetMousePosition());
+    MouseInfo ret;
+    ret.spinning = cameraSpinning;
+    ret.moving = cameraMoving;
+    ret.mousePos = wxGetMousePosition();
+    ret.wheelPos = mouseWheelPos;
+    return ret;
 }
 
 
@@ -842,12 +853,29 @@ void Canvas::onSize(wxSizeEvent&)
 
 void Canvas::onLMBDown(wxMouseEvent&)
 {
-    cameraMoving = true;
-    mousePos = wxGetMousePosition();
+    cameraSpinning = true;
 }
 
 
 void Canvas::onLMBUp(wxMouseEvent&)
 {
+    cameraSpinning = false;
+}
+
+
+void Canvas::onRMBDown(wxMouseEvent&)
+{
+    cameraMoving = true;
+}
+
+
+void Canvas::onRMBUp(wxMouseEvent&)
+{
     cameraMoving = false;
+}
+
+
+void Canvas::onWheel(wxMouseEvent& event)
+{
+    mouseWheelPos += event.GetWheelRotation() * event.GetWheelDelta();
 }
