@@ -39,13 +39,6 @@ public:
 };
 
 
-class ElementBuffer : public Buffer<GLuint>
-{
-public:
-    ElementBuffer(GraphicsManager* parent);
-};
-
-
 class VertexArray
 {
 public:
@@ -93,7 +86,9 @@ public:
     int renderMode;
 
     Object(GraphicsManager* parent, TextureManager* textures, std::string name,
-        GLfloat* vert, size_t vertSize, GLuint* indices, size_t indSize);
+        std::shared_ptr<std::vector<GLfloat>> vert,
+        std::shared_ptr<std::vector<GLfloat>> tex,
+        std::shared_ptr<std::vector<GLfloat>> norm);
     ~Object();
     Object(const Object& oldObject);
 
@@ -106,11 +101,9 @@ private:
     GraphicsManager* parentManager;
     TextureManager* texManager;
     VertexBuffer* vertexBuffer;
-    ElementBuffer* elementBuffer;
     VertexArray* vertexArray;
     std::shared_ptr<Texture> tex;
 
-    int indicesLen;
     int combinedLen;
     GLfloat* combinedData;
 

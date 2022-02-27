@@ -3,24 +3,12 @@
 // https://github.com/VictorGordan/opengl-tutorials
 // https://learnopengl.com/
 
-GLfloat testVertices[] =
-{
-    // positions
-     0.5f,  0.5f, 0.0f,
-     0.5f, -0.5f, 0.0f,
-    -0.5f, -0.5f, 0.0f,
-    -0.5f,  0.5f, 0.0f,
-};
-
-GLuint testIndices[] =
-{
-    0, 1, 2,
-    0, 2, 3,
-};
-
 
 GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
 {
+    lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    cameraToLight = glm::vec3(2.0f, 2.0f, -2.0f);
+
     #ifdef DEBUG
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(oglDebug::GLDebugMessageCallback, NULL);
@@ -41,9 +29,6 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
     textures = new TextureManager(this);
 
     camera = new Camera();
-
-    objects.push_back(std::make_unique<Object>(this, textures, "Plane",
-        testVertices, sizeof(testVertices), testIndices, sizeof(testIndices)));
 }
 
 
@@ -79,6 +64,10 @@ void GraphicsManager::render()
     setUniformMatrix(camera->viewMatrix(), "view");
     setUniformMatrix(camera->projectionMatrix(
         parentCanvas->viewportAspectRatio()), "projection");
+    
+    setUniformVector(lightColor, "lightColor");
+    setUniformVector(camera->getPos() + cameraToLight, "lightPos");
+    // setUniformVector(glm::vec3(2.0, 2.0, 2.0), "lightPos");
 
     for (auto it = objects.begin(); it != objects.end(); it++)
         if ((*it)->show)
@@ -106,20 +95,43 @@ void GraphicsManager::setUniformMatrix(glm::mat4 mat, const char* name)
 }
 
 
+void GraphicsManager::setUniformVector(glm::vec3 vec, const char* name)
+{
+    int location = glGetUniformLocation(shaders->getID(), name);
+    glUniform3f(location, vec.x, vec.y, vec.z);
+}
+
+
 void GraphicsManager::newObject(std::string file, size_t startLine,
     std::shared_ptr<std::vector<std::vector<std::string>>> data,
-    std::shared_ptr<std::vector<GLfloat>> vertices)
+    std::shared_ptr<std::vector<GLfloat>> vertices,
+    std::shared_ptr<std::vector<GLfloat>> texVertices,
+    std::shared_ptr<std::vector<GLfloat>> normals)
 {
     if (data == nullptr)
         data = std::make_shared<std::vector<std::vector<std::string>>>(
             parseFile(file));
 
     std::string keyword;
-    std::vector<std::tuple<GLuint, GLuint, GLuint>> faceData;
+    std::vector<std::tuple<int, int, int>> faceData;
 
     if (vertices == nullptr)
         vertices = std::make_shared<std::vector<GLfloat>>();
-    std::shared_ptr<std::vector<GLuint>> indices(new std::vector<GLuint>());
+
+    if (texVertices == nullptr)
+        texVertices = std::make_shared<std::vector<GLfloat>>();
+
+    if (normals == nullptr)
+        normals = std::make_shared<std::vector<GLfloat>>();
+
+    // std::shared_ptr<std::vector<GLuint>> indices(new std::vector<GLuint>());
+    std::vector<GLuint> indices;
+    std::shared_ptr<std::vector<GLfloat>> finalVertices =
+        std::make_shared<std::vector<GLfloat>>();
+    std::shared_ptr<std::vector<GLfloat>> finalTextures =
+        std::make_shared<std::vector<GLfloat>>();
+    std::shared_ptr<std::vector<GLfloat>> finalNormals =
+        std::make_shared<std::vector<GLfloat>>();
 
     std::string name = "New Object";
     bool nameModified = false;
@@ -142,6 +154,24 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
                 for (size_t i = 1; i < line.size(); i++)
                     vertices->push_back(std::stof(line[i]));
             }
+            else if (keyword == "vt")
+            {
+                // keyword x y
+                if (line.size() != 3)
+                    throw std::invalid_argument("Incorrect number of params");
+                
+                for (size_t i = 1; i < line.size(); i++)
+                    texVertices->push_back(std::stof(line[i]));
+            }
+            else if (keyword == "vn")
+            {
+                // keyword x y z
+                if (line.size() != 4)
+                    throw std::invalid_argument("Incorrect number of params");
+                
+                for (size_t i = 1; i < line.size(); i++)
+                    normals->push_back(std::stof(line[i]));
+            }
             else if (keyword == "f")
             {
                 // keyword vertex1/texture1/normal1 vertex2/texture2/normal2...
@@ -153,8 +183,39 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
                 if (line.size() > 4)
                     triangulate(&faceData, vertices);
                 
-                for (std::tuple<GLuint, GLuint, GLuint> point : faceData)
-                    indices->push_back(std::get<0>(point));
+                try{
+                for (std::tuple<int, int, int> point : faceData)
+                {
+                    indices.push_back(std::get<0>(point));
+                    finalVertices->push_back(
+                        vertices->at(std::get<0>(point) * 3));
+                    finalVertices->push_back(
+                        vertices->at(std::get<0>(point) * 3 + 1));
+                    finalVertices->push_back(
+                        vertices->at(std::get<0>(point) * 3 + 2));
+
+                    if (std::get<1>(point) != -1)
+                    {
+                        finalTextures->push_back(
+                            texVertices->at(std::get<1>(point) * 2));
+                        finalTextures->push_back(
+                            texVertices->at(std::get<1>(point) * 2 + 1));
+                    }
+                    
+                    if (std::get<2>(point) != -1)
+                    {
+                        finalNormals->push_back(
+                            normals->at(std::get<2>(point) * 3));
+                        finalNormals->push_back(
+                            normals->at(std::get<2>(point) * 3 + 1));
+                        finalNormals->push_back(
+                            normals->at(std::get<2>(point) * 3 + 2));
+                    }
+                }
+                }catch(std::exception& exc)
+                {
+                    std::cout << "GOT OUT OF ARRAY " << exc.what() << std::endl;
+                }
             }
             else if (keyword == "o")
             {
@@ -164,7 +225,8 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
                 
                 if (nameModified)
                 {
-                    newObject(file, lineIdx, data, vertices);
+                    newObject(file, lineIdx, data, vertices, texVertices,
+                        normals);
                     break;
                 }
 
@@ -190,8 +252,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
         name.resize(24);
 
     objects.push_back(std::make_unique<Object>(this, textures, name,
-    vertices->data(), vertices->size() * sizeof(GLfloat),
-    indices->data(), indices->size() * sizeof(GLuint)));
+        finalVertices, finalTextures, finalNormals));
     
     #ifdef DEBUG
         std::ostringstream messageStream;
@@ -379,11 +440,11 @@ std::vector<std::vector<std::string>> GraphicsManager::parseFile(
 }
 
 
-std::vector<std::tuple<GLuint, GLuint, GLuint>> GraphicsManager::parseFace(
+std::vector<std::tuple<int, int, int>> GraphicsManager::parseFace(
     size_t vertices, std::vector<std::string> data)
 {
     // first tuple signals if the data has texture coords, the second - normals
-    std::vector<std::tuple<GLuint, GLuint, GLuint>> ret;
+    std::vector<std::tuple<int, int, int>> ret;
 
     std::stringstream valueStream;
     std::string tempValue;
@@ -394,19 +455,19 @@ std::vector<std::tuple<GLuint, GLuint, GLuint>> GraphicsManager::parseFace(
     {
         valueStream << data[i];
         dataIdx = 0;
-        ret.push_back(std::make_tuple(0, 0, 0));
+        ret.push_back(std::make_tuple(-1, -1, -1));
 
-        while (std::getline(valueStream, tempValue, '\\'))
+        while (std::getline(valueStream, tempValue, '/'))
         {
             if (tempValue.empty())
                 continue;
-            
+
             saveValue = std::stoi(tempValue);
 
             // faces can be indexed negatively, and are 1-based
             if (saveValue < 0)
                 saveValue = vertices + saveValue;
-            else if ((size_t)saveValue >= vertices)
+            else if (static_cast<size_t>(saveValue) >= vertices)
                 throw std::invalid_argument("Invalid vertex index in face");
             else
                 saveValue--;
@@ -437,7 +498,7 @@ std::vector<std::tuple<GLuint, GLuint, GLuint>> GraphicsManager::parseFace(
 // using ear-clipping method
 // https://www.geometrictools.com/Documentation/TriangulationByEarClipping.pdf
 void GraphicsManager::triangulate(
-    std::vector<std::tuple<GLuint, GLuint, GLuint>>* indices,
+    std::vector<std::tuple<int, int, int>>* indices,
     std::shared_ptr<std::vector<GLfloat>> allVertices)
 {
     struct vertex
@@ -592,7 +653,7 @@ void GraphicsManager::triangulate(
 
     size_t indicesOriginalSize = indices->size();
     for (GLuint idx : map)
-        indices->push_back((*indices)[idx]);
+        indices->push_back(indices->at(idx));
     indices->erase(indices->begin(), indices->begin() + indicesOriginalSize);
 }
 
@@ -686,4 +747,9 @@ void Camera::move(MouseInfo info)
         vertiMove = 0;
         cameraMovingPrevFrame = false;
     }
+}
+
+glm::vec3 Camera::getPos()
+{
+    return target - toTarget;
 }

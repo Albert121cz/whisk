@@ -41,13 +41,13 @@ void Buffer<T>::sendData(T* data, GLsizei size)
     if (dataStoredSize != 0)
         delete dataStored;
 
-    dataStoredSize = size / sizeof(T);
+    dataStoredSize = size;
     dataStored = new T[dataStoredSize];
 
     for (GLsizei i = 0; i < dataStoredSize; i++)
         dataStored[i] = data[i];
 
-    glNamedBufferData(ID, size, data, GL_STATIC_DRAW);
+    glNamedBufferData(ID, size * sizeof(T), data, GL_STATIC_DRAW);
 }
 
 
@@ -67,12 +67,6 @@ GLuint Buffer<T>::getID()
 
 VertexBuffer::VertexBuffer(GraphicsManager* parent)
     : Buffer<GLfloat>(parent, GL_ARRAY_BUFFER)
-{
-}
-
-
-ElementBuffer::ElementBuffer(GraphicsManager* parent)
-    : Buffer<GLuint>(parent, GL_ELEMENT_ARRAY_BUFFER)
 {
 }
 
@@ -97,18 +91,23 @@ void VertexArray::enable()
     for (auto it = buffers.begin(); it != buffers.end(); it++)
         glBindBuffer((*it).first, (*it).second);
 
-    // X Y Z | R G B | S T
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), 
+    //  pos  | color | tex | normal 
+    // X Y Z | R G B | X Y | X Y X
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), 
         (GLvoid*)0);
     glEnableVertexAttribArray(0);
     
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), 
-        (GLvoid*)(3*sizeof(GLfloat)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), 
+        (GLvoid*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
     
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), 
-        (GLvoid*)(6*sizeof(GLfloat)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), 
+        (GLvoid*)(6 * sizeof(GLfloat)));
     glEnableVertexAttribArray(2);
+    
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), 
+        (GLvoid*)(8 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(3);
 
     // vertex array must be unbound first
     glBindVertexArray(0);
@@ -167,54 +166,73 @@ Texture::Texture(GraphicsManager* parent, const unsigned char* imageData,
 
 
 Object::Object(GraphicsManager* parent, TextureManager* textures,
-    std::string name, GLfloat* vert, size_t vertSize, GLuint* indices,
-    size_t indSize)
-    :  objectName(name), parentManager(parent), texManager(textures),
-    indicesLen(indSize/sizeof(GLuint))
+    std::string name, std::shared_ptr<std::vector<GLfloat>> vert,
+    std::shared_ptr<std::vector<GLfloat>> texVert,
+    std::shared_ptr<std::vector<GLfloat>> norm)
+    :  objectName(name), parentManager(parent), texManager(textures)
 {
     show = true;
     position = glm::vec3(0.0f, 0.0f, 0.0f);
     rotation = glm::vec3(0.0f, 0.0f, 0.0f);
     size = glm::vec3(1.0f, 1.0f, 1.0f);
     renderMode = FILL;
-    color[0] = 1.0f;
-    color[1] = 0.0f;
-    color[2] = 0.0f;
+    setColor(1.0f, 0.0f, 0.0f);
+
+    int vertexArrayStride = 11;
 
 // combined array includes position of vertices (x, y, z), colors of vertices
-// without texture (r, g, b), position of vertices in texture (s, t)
-    int verticesLen = vertSize/sizeof(GLfloat);
-    combinedLen = (verticesLen / 3) * 8;
+// without texture (r, g, b), position of vertices in texture (x, y) and
+// vertex normals for lighting (x, y, z)
+    combinedLen = (vert->size() / 3) * vertexArrayStride;
     combinedData = new GLfloat[combinedLen];
-    
-    for (int vertex = 0; vertex < verticesLen / 3; vertex++)
-    {
-        for (size_t coord = 0; coord < 3; coord++)
-            combinedData[vertex * 8 + coord] = vert[vertex * 3 + coord];
 
-        for (size_t clr = 0; clr < 3; clr++)
-            combinedData[vertex * 8 + 3 + clr] = color[clr];
+    float texVal, normVal;
+
+    for (size_t vertex = 0; vertex < vert->size() / 3; vertex++)
+    {
+        for (size_t coordIdx = 0; coordIdx < 3; coordIdx++)
+            combinedData[vertex * vertexArrayStride + coordIdx] =
+                vert->at(vertex * 3 + coordIdx);
+
+        for (size_t clrIdx = 0; clrIdx < 3; clrIdx++)
+            combinedData[vertex * vertexArrayStride + 3 + clrIdx] =
+                color[clrIdx];
+
+        for (size_t texIdx = 0; texIdx < 2; texIdx++)
+        {
+            if (texVert->size() == 0)
+                texVal = 0.0f;
+            else
+                texVal = texVert->at(vertex * 2 + texIdx);
+
+            combinedData[vertex * vertexArrayStride + 6 + texIdx] = texVal;
+        }
+
+        for (size_t normIdx = 0; normIdx < 3; normIdx++)
+        {
+            if (norm->size() == 0)
+                normVal = 0.0f;
+            else
+                normVal = norm->at(vertex * 3 + normIdx);
+
+            combinedData[vertex * vertexArrayStride + 8 + normIdx] = normVal;
+        }
     }
 
     vertexBuffer = new VertexBuffer(parentManager);
-    vertexBuffer->sendData(combinedData, combinedLen*sizeof(GLfloat));
-
-    elementBuffer = new ElementBuffer(parentManager);
-    elementBuffer->sendData(indices, indicesLen*sizeof(GLuint));
+    vertexBuffer->sendData(combinedData, combinedLen);
 
     vertexArray = new VertexArray(parentManager);
     vertexArray->link(vertexBuffer);
-    vertexArray->link(elementBuffer);
     vertexArray->enable();
 }
 
 
 Object::~Object()
 {
-    delete[] combinedData;   
+    delete[] combinedData;
     delete vertexArray;
     delete vertexBuffer;
-    delete elementBuffer;
 }
 
 
@@ -227,7 +245,6 @@ Object::Object(const Object& old)
     texManager = old.texManager;
     tex = old.tex;
 
-    indicesLen = old.indicesLen;
     combinedLen = old.combinedLen;
     combinedData = new GLfloat[combinedLen];
     for (int i = 0; i < combinedLen; i++)
@@ -241,11 +258,9 @@ Object::Object(const Object& old)
     renderMode = old.renderMode;
 
     vertexBuffer = new VertexBuffer(*old.vertexBuffer);
-    elementBuffer = new ElementBuffer(*old.elementBuffer);
 
     vertexArray = new VertexArray(parentManager);
     vertexArray->link(vertexBuffer);
-    vertexArray->link(elementBuffer);
     vertexArray->enable();
 }
 
@@ -310,11 +325,10 @@ void Object::draw()
     glPolygonMode(GL_FRONT_AND_BACK, oglRenderMode);
 
     vertexArray->bind();
-    glDrawElements(GL_TRIANGLES, indicesLen*sizeof(GLuint), GL_UNSIGNED_INT, 0);
+    glDrawArrays(GL_TRIANGLES, 0, combinedLen / 11);
 }
 
 
 // explicit template instantiation
 // https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
 template class Buffer<GLfloat>;
-template class Buffer<GLuint>;
