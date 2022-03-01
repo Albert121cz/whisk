@@ -92,6 +92,7 @@ public:
     ~Object();
     Object(const Object& oldObject);
 
+    std::tuple<GLfloat, GLfloat, GLfloat> getColor();
     void setColor(GLfloat r, GLfloat g, GLfloat b);
     // TODO: link texture with object - needs texture menu (wxListBox)
     void setTexture(unsigned int idx);

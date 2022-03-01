@@ -363,6 +363,12 @@ std::string GraphicsManager::getObjectName(int idx)
 }
 
 
+std::tuple<GLfloat, GLfloat, GLfloat> GraphicsManager::getObjectColor(int idx)
+{
+    return objects[idx]->getColor();
+}
+
+
 glm::vec3* GraphicsManager::getObjectPosVec(int idx)
 {
     return &objects[idx]->position;

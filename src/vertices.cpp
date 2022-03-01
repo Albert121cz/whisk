@@ -242,11 +242,16 @@ Object::Object(const Object& old)
 {
     show = old.show;
     objectName = old.objectName + " copy";
+    position = old.position;
+    rotation = old.rotation;
+    size = old.size;
+    renderMode = old.renderMode;
 
     parentManager = old.parentManager;
     texManager = old.texManager;
     tex = old.tex;
 
+    vertexArrayStride = old.vertexArrayStride;
     combinedLen = old.combinedLen;
     combinedData = new GLfloat[combinedLen];
     for (int i = 0; i < combinedLen; i++)
@@ -254,16 +259,18 @@ Object::Object(const Object& old)
 
     for (int i = 0; i < 3; i++)
         color[i] = old.color[i];
-    position = old.position;
-    rotation = old.rotation;
-    size = old.size;
-    renderMode = old.renderMode;
 
     vertexBuffer = new VertexBuffer(*old.vertexBuffer);
 
     vertexArray = new VertexArray(parentManager);
     vertexArray->link(vertexBuffer);
     vertexArray->enable();
+}
+
+
+std::tuple<GLfloat, GLfloat, GLfloat> Object::getColor()
+{
+    return std::make_tuple(color[0], color[1], color[2]);
 }
 
 
@@ -276,7 +283,7 @@ void Object::setColor(GLfloat r, GLfloat g, GLfloat b)
     // color is on positions 3, 4 and 5
     for (int vertex = 0; vertex < combinedLen / vertexArrayStride; vertex++)
         for (int tone = 0; tone < 3; tone++)
-            combinedData[vertex * vertexArrayStride + tone] = color[tone];
+            combinedData[vertex * vertexArrayStride + 3 + tone] = color[tone];
     
     vertexBuffer->sendData(combinedData, combinedLen);
 }

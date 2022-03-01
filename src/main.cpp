@@ -356,14 +356,26 @@ void ObjectButtonPanel::onColor(wxCommandEvent&)
     if (idx == wxNOT_FOUND)
         return;
     
-    wxColourDialog dialog(mainFrame);
+    std::tuple<GLfloat, GLfloat, GLfloat> oldClrTuple =
+        graphicsManager->getObjectColor(idx);
+    
+    std::string oldClrString("rgb("+
+        std::to_string(static_cast<int>(std::get<0>(oldClrTuple)*255))+","+
+        std::to_string(static_cast<int>(std::get<1>(oldClrTuple)*255))+","+
+        std::to_string(static_cast<int>(std::get<2>(oldClrTuple)*255))+")");
+    
+    wxColourData oldClrData;
+    oldClrData.SetColour(wxColour(oldClrString));
+
+    wxColourDialog dialog(mainFrame, &oldClrData);
 
     if (dialog.ShowModal() == wxID_CANCEL)
         return;
 
     wxColour clr = dialog.GetColourData().GetColour();
 
-    graphicsManager->setObjectColor(idx, clr.Red(), clr.Green(), clr.Blue());
+    graphicsManager->setObjectColor(idx, clr.Red() / 255.0f,
+        clr.Green() / 255.0f, clr.Blue() / 255.0f);
 }
 
 

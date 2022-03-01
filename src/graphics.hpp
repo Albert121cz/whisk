@@ -56,6 +56,7 @@ public:
     void showOrHideObject(int idx);
     bool getObjectShow(int idx);
     std::string getObjectName(int idx);
+    std::tuple<GLfloat, GLfloat, GLfloat> getObjectColor(int idx);
     glm::vec3* getObjectPosVec(int idx);
     glm::vec3* getObjectRotVec(int idx);
     glm::vec3* getObjectSize(int idx);
