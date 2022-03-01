@@ -23,7 +23,6 @@ wxDEFINE_EVENT(NEW_OBJECT, wxCommandEvent);
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_COMMAND(wxID_ANY, NEW_OBJECT, MainFrame::onObjLoad)
     EVT_MENU(LOAD_OBJ, MainFrame::onObjLoad)
-    EVT_MENU(LOAD_TEX, MainFrame::onTexLoad)
     EVT_MENU(wxID_ABOUT, MainFrame::onAbout)
     EVT_MENU(wxID_EXIT, MainFrame::onExit)
     EVT_CLOSE(MainFrame::onClose)
@@ -44,8 +43,6 @@ MainFrame::MainFrame(const wxString& title,
     wxMenu* menuContextFile = new wxMenu;
     menuContextFile->Append(Event::LOAD_OBJ, "Load &object...\tCtrl-O",
         "Load OBJ file");
-    menuContextFile->Append(Event::LOAD_TEX, "Load &texture...\tCtrl-T",
-        "Load texture file");
     menuContextFile->AppendSeparator();
     menuContextFile->Append(wxID_EXIT);
 
@@ -117,31 +114,6 @@ void MainFrame::onObjLoad(wxCommandEvent&)
     else
         wxMessageBox("The object file failed to open", "Object load error",
         wxOK | wxICON_ERROR, this);
-}
-
-
-void MainFrame::onTexLoad(wxCommandEvent&)
-{
-    wxFileDialog loadFileDialog(this, _("Load texture file"), "", "", 
-    "PNG (*.png)|*.png|BPM (*.bmp)|*.bmp|JPEG (*.jpg; *.jpeg)|*.jpg;*.jpeg", 
-                wxFD_OPEN|wxFD_FILE_MUST_EXIST);
-    
-    if (loadFileDialog.ShowModal() == wxID_CANCEL)
-        return;
-
-    wxImage image(loadFileDialog.GetPath());
-
-
-    if (image.IsOk())
-    {
-        wxLogVerbose("Texture file opened: '%s'", loadFileDialog.GetPath());
-        // mirror vertically
-        image = image.Mirror(false);
-        canvas->addTex(image.GetData(), image.GetWidth(), image.GetHeight());
-    }
-    else
-        wxMessageBox("The texture file is not a valid image file",
-                "Texture load error", wxOK | wxICON_ERROR, this);
 }
 
 
@@ -274,12 +246,12 @@ void SidePanelRefreshTimer::Notify()
         listbox->Delete(i);
     }
 
-    int selected = listbox->GetSelection();
+    int idx = listbox->GetSelection();
     if (lastSelected != listbox->GetSelection())
     {
         wxEvent* event = new wxCommandEvent(REFRESH_OBJECT_SETTINGS);
         wxQueueEvent(objectSettings, event);
-        lastSelected = selected;
+        lastSelected = idx;
     }
 
     StartOnce();
@@ -297,6 +269,7 @@ wxBEGIN_EVENT_TABLE(ObjectButtonPanel, wxPanel)
     EVT_BUTTON(wxID_NEW, ObjectButtonPanel::onNew)
     EVT_BUTTON(ID_RENAME, ObjectButtonPanel::onRename)
     EVT_BUTTON(ID_COLOR, ObjectButtonPanel::onColor)
+    EVT_BUTTON(ID_TEXTURE, ObjectButtonPanel::onTexture)
     EVT_BUTTON(ID_DUPLICATE, ObjectButtonPanel::onDuplicate)
     EVT_BUTTON(wxID_DELETE, ObjectButtonPanel::onDelete)
 wxEND_EVENT_TABLE()
@@ -320,6 +293,9 @@ ObjectButtonPanel::ObjectButtonPanel(std::shared_ptr<GraphicsManager> manager,
 
     wxButton* colorButton = new wxButton(this, ID_COLOR, "Color");
     sizer->Add(colorButton, 0, wxTOP, 5);
+
+    wxButton* textureButton = new wxButton(this, ID_TEXTURE, "Texture");
+    sizer->Add(textureButton, 0, wxTOP, 5);
 
     wxButton* duplicateButton = new wxButton(this, ID_DUPLICATE, "Duplicate");
     sizer->Add(duplicateButton, 0, wxTOP, 5);
@@ -360,9 +336,9 @@ void ObjectButtonPanel::onColor(wxCommandEvent&)
         graphicsManager->getObjectColor(idx);
     
     std::string oldClrString("rgb("+
-        std::to_string(static_cast<int>(std::get<0>(oldClrTuple)*255))+","+
-        std::to_string(static_cast<int>(std::get<1>(oldClrTuple)*255))+","+
-        std::to_string(static_cast<int>(std::get<2>(oldClrTuple)*255))+")");
+        std::to_string(static_cast<int>(std::get<0>(oldClrTuple) * 255)) + "," +
+        std::to_string(static_cast<int>(std::get<1>(oldClrTuple) * 255)) + "," +
+        std::to_string(static_cast<int>(std::get<2>(oldClrTuple) * 255)) + ")");
     
     wxColourData oldClrData;
     oldClrData.SetColour(wxColour(oldClrString));
@@ -376,6 +352,18 @@ void ObjectButtonPanel::onColor(wxCommandEvent&)
 
     graphicsManager->setObjectColor(idx, clr.Red() / 255.0f,
         clr.Green() / 255.0f, clr.Blue() / 255.0f);
+}
+
+
+void ObjectButtonPanel::onTexture(wxCommandEvent&)
+{
+    int idx = targetListbox->GetSelection();
+    if (idx == wxNOT_FOUND)
+        return;
+    
+    TextureFrame* frame = new TextureFrame(mainFrame, graphicsManager, idx);
+    frame->Show();
+    mainFrame->Disable();
 }
 
 
@@ -402,7 +390,6 @@ void ObjectButtonPanel::onDelete(wxCommandEvent&)
 wxBEGIN_EVENT_TABLE(RenameFrame, wxFrame)
     EVT_TEXT_ENTER(wxID_ANY, RenameFrame::onEnter)
 wxEND_EVENT_TABLE()
-
 
 RenameFrame::RenameFrame(MainFrame* parent,
     std::shared_ptr<GraphicsManager> manager, int idx)
@@ -474,6 +461,150 @@ void RenameFrameButtonPanel::onOk(wxCommandEvent&)
 
 
 void RenameFrameButtonPanel::onCancel(wxCommandEvent&)
+{
+    parentFrame->Close();
+}
+
+
+TextureFrame::TextureFrame(MainFrame* parent, 
+    std::shared_ptr<GraphicsManager> manager, int idx)
+    : wxFrame(parent, wxID_ANY, "Textures", wxDefaultPosition, wxDefaultSize,
+    wxCAPTION | wxFRAME_FLOAT_ON_PARENT), mainFrame(parent)
+{
+    texManager = manager->getTexManagerPtr();
+
+    wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+
+    listBox = new wxListBox(this, wxID_ANY);
+    sizer->Add(listBox, 1, wxEXPAND | wxALL, 2);
+
+    std::vector<std::string> names = texManager->getAllTextureNames();
+    wxString name;
+
+    for (size_t i = 0; i < names.size(); i++)
+    {
+        name = names[i];
+        listBox->InsertItems(1, &name, i);
+    }
+
+    TextureFrameButtonPanel* buttons = new TextureFrameButtonPanel(this,
+        mainFrame, manager, listBox, idx);
+    sizer->Add(buttons, 0, wxTOP, 2);
+
+    SetSizer(sizer);
+
+    SetSize(wxSize(250, 300));
+    
+    // calculate the position so it is in the middle of the main frame
+    wxRect newRect = parent->GetRect().Deflate(
+        (parent->GetSize().GetWidth() - GetSize().GetWidth())/2,
+        (parent->GetSize().GetHeight() - GetSize().GetHeight())/2);
+    SetPosition(newRect.GetPosition());
+}
+
+
+TextureFrame::~TextureFrame()
+{
+    mainFrame->Enable();
+}
+
+
+wxBEGIN_EVENT_TABLE(TextureFrameButtonPanel, wxPanel)
+    EVT_BUTTON(wxID_NEW, TextureFrameButtonPanel::onNew)
+    EVT_BUTTON(wxID_DELETE, TextureFrameButtonPanel::onDelete)
+    EVT_BUTTON(wxID_OK, TextureFrameButtonPanel::onOk)
+    EVT_BUTTON(wxID_CANCEL, TextureFrameButtonPanel::onCancel)
+wxEND_EVENT_TABLE()
+
+TextureFrameButtonPanel::TextureFrameButtonPanel(TextureFrame* parent,
+    MainFrame* main, std::shared_ptr<GraphicsManager> manager,
+    wxListBox* target, int idx)
+    : wxPanel(parent), parentFrame(parent), mainFrame(main),
+    graphicsManager(manager), targetListBox(target), objIdx(idx)
+{
+    texManager = graphicsManager->getTexManagerPtr();
+
+    wxGridSizer* sizer = new wxGridSizer(2, 12, 6);
+
+    wxButton* newButton = new wxButton(this, wxID_NEW, "New");
+    sizer->Add(newButton, wxEXPAND);
+
+    wxButton* deleteButton = new wxButton(this, wxID_DELETE, "Delete");
+    sizer->Add(deleteButton, wxEXPAND | wxLEFT, 5);
+
+    wxButton* okButton = new wxButton(this, wxID_OK, "Ok");
+    sizer->Add(okButton, wxEXPAND);
+
+    wxButton* cancelButton = new wxButton(this, wxID_CANCEL, "Cancel");
+    sizer->Add(cancelButton, wxEXPAND | wxLEFT, 5);
+
+    SetSizer(sizer);
+}
+
+
+void TextureFrameButtonPanel::onNew(wxCommandEvent&)
+{
+    wxFileDialog loadFileDialog(this, "Load texture file", "", "", 
+    "PNG (*.png)|*.png|BPM (*.bmp)|*.bmp|JPEG (*.jpg; *.jpeg)|*.jpg;*.jpeg", 
+                wxFD_OPEN|wxFD_FILE_MUST_EXIST);
+    
+    if (loadFileDialog.ShowModal() == wxID_CANCEL)
+        return;
+
+    wxImage image(loadFileDialog.GetPath());
+
+    if (!image.IsOk())
+    {
+        wxMessageBox("The texture file is not a valid image file",
+                "Texture load error", wxOK | wxICON_ERROR, this);
+        return;
+    }
+
+    // mirror vertically
+    image = image.Mirror(false);
+
+    std::string path(loadFileDialog.GetPath());
+
+    wxLogVerbose("Texture file opened: '%s'", path);
+    
+    std::regex fileNameRegex("[^\\\\]*$");
+    std::smatch fileName;
+
+    std::regex_search(path, fileName, fileNameRegex);
+
+    wxString name(fileName[0]);
+    texManager->addTexture(image.GetData(),
+        image.GetWidth(), image.GetHeight(),name.ToStdString());
+
+    targetListBox->InsertItems(1, &name, targetListBox->GetCount());
+}
+
+
+void TextureFrameButtonPanel::onDelete(wxCommandEvent&)
+{
+    int idx = targetListBox->GetSelection();
+
+    if (idx == wxNOT_FOUND)
+        return;
+    
+    texManager->deleteTexture(idx);
+    targetListBox->Delete(idx);
+}
+
+
+void TextureFrameButtonPanel::onOk(wxCommandEvent&)
+{
+    int idx = targetListBox->GetSelection();
+
+    if (idx == wxNOT_FOUND)
+        return;
+    
+    graphicsManager->setObjectTex(objIdx, texManager->getTexPtr(idx));
+    parentFrame->Close();
+}
+
+
+void TextureFrameButtonPanel::onCancel(wxCommandEvent&)
 {
     parentFrame->Close();
 }
@@ -583,19 +714,19 @@ ObjectSettings::ObjectSettings(wxPanel* parent, wxCheckListBox* list,
 
 void ObjectSettings::onRefresh(wxCommandEvent&)
 {
-    int selected = listbox->GetSelection();
+    int idx = listbox->GetSelection();
     
-    if (selected == wxNOT_FOUND)
+    if (idx == wxNOT_FOUND)
     {
         for (size_t i = 0; i < textFields.size(); i++)
             textFields[i]->SetValue(0);
         return;
     }
 
-    glm::vec3* pos = graphicsManager->getObjectPosVec(selected);
-    glm::vec3* rot = graphicsManager->getObjectRotVec(selected);
-    glm::vec3* size = graphicsManager->getObjectSize(selected);
-    int* mode = graphicsManager->getObjectMode(selected);
+    glm::vec3* pos = graphicsManager->getObjectPosVec(idx);
+    glm::vec3* rot = graphicsManager->getObjectRotVec(idx);
+    glm::vec3* size = graphicsManager->getObjectSize(idx);
+    int* mode = graphicsManager->getObjectMode(idx);
 
     float values[] = {(*pos).x, (*pos).y, (*pos).z,
         (*rot).x, (*rot).y, (*rot).z, (*size).x};
@@ -618,17 +749,17 @@ void ObjectSettings::onSpinChange(wxSpinDoubleEvent& event)
 {
     int fieldID = event.GetId();
 
-    int selected = listbox->GetSelection();
+    int idx = listbox->GetSelection();
 
-    if (selected == wxNOT_FOUND)
+    if (idx == wxNOT_FOUND)
     {
         textFields[fieldID]->SetValue(0);
         return;
     }
 
-    glm::vec3* pos = graphicsManager->getObjectPosVec(selected);
-    glm::vec3* rot = graphicsManager->getObjectRotVec(selected);
-    glm::vec3* size = graphicsManager->getObjectSize(selected);
+    glm::vec3* pos = graphicsManager->getObjectPosVec(idx);
+    glm::vec3* rot = graphicsManager->getObjectRotVec(idx);
+    glm::vec3* size = graphicsManager->getObjectSize(idx);
 
     float* values[] = {&pos->x, &pos->y, &pos->z,  &rot->x, &rot->y, &rot->z,
         &size->x, &size->y, &size->z};
@@ -648,15 +779,15 @@ void ObjectSettings::onSpinChange(wxSpinDoubleEvent& event)
 
 void ObjectSettings::onModeChange(wxCommandEvent&)
 {
-    int selected = listbox->GetSelection();
+    int idx = listbox->GetSelection();
 
-    if (selected == wxNOT_FOUND)
+    if (idx == wxNOT_FOUND)
     {
         renderModeChoice->SetSelection(wxNOT_FOUND);
         return;
     }
 
-    int* mode = graphicsManager->getObjectMode(selected);
+    int* mode = graphicsManager->getObjectMode(idx);
     *mode = renderModeChoice->GetSelection();
 }
 
@@ -783,7 +914,7 @@ void Canvas::flip()
 
 void Canvas::addTex(const unsigned char* data, int width, int height)
 {
-    graphicsManager->getTexManagerPtr()->addTexture(data, width, height);
+    graphicsManager->getTexManagerPtr()->addTexture(data, width, height, "cmon");
 }
 
 

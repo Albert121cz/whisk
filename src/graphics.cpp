@@ -251,8 +251,8 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
     if (name.size() > 24)
         name.resize(24);
 
-    objects.push_back(std::make_unique<Object>(this, textures, name,
-        finalVertices, finalTextures, finalNormals));
+    objects.push_back(std::make_unique<Object>(this, name, finalVertices,
+        finalTextures, finalNormals));
     
     #ifdef DEBUG
         std::ostringstream messageStream;
@@ -285,6 +285,21 @@ void GraphicsManager::setObjectColor(int idx, GLfloat r, GLfloat g, GLfloat b)
     #endif /* DEBUG */
 
     objects[idx]->setColor(r, g, b);
+    objects[idx]->hasTex = false;
+}
+
+
+void GraphicsManager::setObjectTex(int idx, std::shared_ptr<Texture> tex)
+{
+    #ifdef DEBUG
+        std::ostringstream messageStream;
+        messageStream << "Object texture changed: " << objects[idx]->objectName
+            << " -> " << tex->textureName;
+        sendToLog(messageStream.str());
+    #endif /* DEBUG */
+
+    objects[idx]->tex = tex;
+    objects[idx]->hasTex = true;
 }
 
 

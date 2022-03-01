@@ -136,9 +136,11 @@ void VertexArray::bind()
 
 
 Texture::Texture(GraphicsManager* parent, const unsigned char* imageData, 
-    int imageWidth, int imageHeight, const GLenum type)
-    : parentManager(parent), texType(type)
+    int imageWidth, int imageHeight, std::string name)
+    : textureName(name), parentManager(parent)
 {
+    texType = GL_TEXTURE_2D;
+
     glGenTextures(1, &ID);
 
     glBindTexture(texType, ID);
@@ -165,13 +167,28 @@ Texture::Texture(GraphicsManager* parent, const unsigned char* imageData,
 }
 
 
-Object::Object(GraphicsManager* parent, TextureManager* textures,
-    std::string name, std::shared_ptr<std::vector<GLfloat>> vert,
+
+Texture::~Texture()
+{
+    glMakeTextureHandleNonResidentARB(handle);
+    glDeleteTextures(1, &ID);
+}
+
+
+GLuint64 Texture::getHandle()
+{
+    return handle;
+}
+
+
+Object::Object(GraphicsManager* parent, std::string name,
+    std::shared_ptr<std::vector<GLfloat>> vert,
     std::shared_ptr<std::vector<GLfloat>> texVert,
     std::shared_ptr<std::vector<GLfloat>> norm)
-    :  objectName(name), parentManager(parent), texManager(textures)
+    :  objectName(name), parentManager(parent)
 {
     show = true;
+    hasTex = false;
     position = glm::vec3(0.0f, 0.0f, 0.0f);
     rotation = glm::vec3(0.0f, 0.0f, 0.0f);
     size = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -248,7 +265,6 @@ Object::Object(const Object& old)
     renderMode = old.renderMode;
 
     parentManager = old.parentManager;
-    texManager = old.texManager;
     tex = old.tex;
 
     vertexArrayStride = old.vertexArrayStride;
@@ -289,27 +305,25 @@ void Object::setColor(GLfloat r, GLfloat g, GLfloat b)
 }
 
 
-void Object::setTexture(unsigned int idx)
-{
-    tex = texManager->getTexPtr(idx);
-}
-
-
 void Object::draw()
 {
     int useTexUniform = glGetUniformLocation(parentManager->getShadersID(),
         "useTex");
     int samplerUniform = glGetUniformLocation(parentManager->getShadersID(),
         "texHandle");
-    GLint hasTex;
-    if (tex != nullptr)
+
+    GLint useTex;
+
+    if (hasTex)
     {
-        hasTex = 1;
+        useTex = 1;
         GLuint64 handle = tex->getHandle();
         glUniformHandleui64ARB(samplerUniform, handle);
     }
-    else hasTex = 0;
-    glUniform1i(useTexUniform, hasTex);
+    else 
+        useTex = 0;
+
+    glUniform1i(useTexUniform, useTex);
     
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::rotate(model, glm::radians(rotation.x),
@@ -342,6 +356,46 @@ void Object::draw()
 
     vertexArray->bind();
     glDrawArrays(GL_TRIANGLES, 0, combinedLen / 11);
+}
+
+
+TextureManager::TextureManager(GraphicsManager* manager)
+    : graphicsManager(manager)
+{    
+}
+
+
+void TextureManager::addTexture(const unsigned char* data, int width,
+    int height, std::string name)
+{
+    textures.push_back(
+        std::make_shared<Texture>(graphicsManager, data, width, height, name));
+}
+
+
+void TextureManager::deleteTexture(int idx)
+{
+    textures.erase(textures.begin() + idx);
+}
+
+
+std::shared_ptr<Texture> TextureManager::getTexPtr(int idx)
+{
+    if (static_cast<size_t>(idx) > textures.size())
+        return nullptr;
+    
+    return textures[idx];
+}
+
+
+std::vector<std::string> TextureManager::getAllTextureNames()
+{
+    std::vector<std::string> names;
+
+    for (std::shared_ptr<Texture> texture : textures)
+        names.push_back(texture->textureName);
+    
+    return names;
 }
 
 

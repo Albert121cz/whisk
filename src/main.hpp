@@ -22,6 +22,7 @@
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <regex>
 
 // must be defined for wxCheckListBox to work
 #define wxUSE_OWNER_DRAWN 1
@@ -64,15 +65,13 @@ private:
     Canvas* canvas;
 
     void onObjLoad(wxCommandEvent&);
-    void onTexLoad(wxCommandEvent&);
     void onAbout(wxCommandEvent&);
     void onExit(wxCommandEvent&);
     void onClose(wxCloseEvent& event);
 
     enum Event
     {
-        LOAD_OBJ,
-        LOAD_TEX
+        LOAD_OBJ
     };
 
     wxDECLARE_EVENT_TABLE();
@@ -141,13 +140,15 @@ private:
     void onNew(wxCommandEvent&);
     void onRename(wxCommandEvent&);
     void onColor(wxCommandEvent&);
+    void onTexture(wxCommandEvent&);
     void onDuplicate(wxCommandEvent&);
     void onDelete(wxCommandEvent&);
 
-    enum ButtonEvents
+    enum ButtonID
     {
         ID_RENAME,
         ID_COLOR,
+        ID_TEXTURE,
         ID_DUPLICATE
     };
 
@@ -182,6 +183,43 @@ public:
 private:
     RenameFrame* parentFrame;
 
+    void onOk(wxCommandEvent&);
+    void onCancel(wxCommandEvent&);
+
+    wxDECLARE_EVENT_TABLE();
+};
+
+
+class TextureFrame : public wxFrame
+{
+public:
+    TextureFrame(MainFrame* parent, std::shared_ptr<GraphicsManager> manager,
+        int idx);
+    ~TextureFrame();
+
+private:
+    MainFrame* mainFrame;
+    TextureManager* texManager;
+    wxListBox* listBox;
+};
+
+
+class TextureFrameButtonPanel : public wxPanel
+{
+public:
+    TextureFrameButtonPanel(TextureFrame* parent, MainFrame* main,
+    std::shared_ptr<GraphicsManager> manager, wxListBox* target, int idx);
+
+private:
+    TextureFrame* parentFrame;
+    MainFrame* mainFrame;
+    std::shared_ptr<GraphicsManager> graphicsManager;
+    TextureManager* texManager;
+    wxListBox* targetListBox;
+    int objIdx;
+
+    void onNew(wxCommandEvent&);
+    void onDelete(wxCommandEvent&);
     void onOk(wxCommandEvent&);
     void onCancel(wxCommandEvent&);
 

@@ -30,6 +30,7 @@ class ElementBuffer;
 class VertexArray;
 class Camera;
 class Object;
+class Texture;
 struct MouseInfo;
 
 
@@ -51,6 +52,7 @@ public:
         std::shared_ptr<std::vector<GLfloat>> normals = nullptr);
     void renameObject(int idx, std::string newName);
     void setObjectColor(int idx, GLfloat r, GLfloat g, GLfloat b);
+    void setObjectTex(int idx, std::shared_ptr<Texture> tex);
     void duplicateObject(int idx);
     void deleteObject(int idx);
     void showOrHideObject(int idx);

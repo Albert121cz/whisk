@@ -61,17 +61,19 @@ private:
 class Texture
 {
 public:
-    Texture(GraphicsManager* parent, const unsigned char* imageData,
-        int imageWidth, int imageHeight, const GLenum type=GL_TEXTURE_2D);
-    ~Texture() {glDeleteTextures(1, &ID);}
+    std::string textureName;
 
-    GLuint64 getHandle() {return handle;}
+    Texture(GraphicsManager* parent, const unsigned char* imageData,
+        int imageWidth, int imageHeight, std::string name);
+    ~Texture();
+
+    GLuint64 getHandle();
 
 private:
+    GraphicsManager* parentManager;
     GLuint ID;
     GLuint64 handle;
-    GraphicsManager* parentManager;
-    const GLenum texType;
+    GLenum texType;
 };
 
 
@@ -80,12 +82,14 @@ class Object
 public:
     bool show;
     std::string objectName;
+    bool hasTex;
+    std::shared_ptr<Texture> tex;
     glm::vec3 position;
     glm::vec3 rotation;
     glm::vec3 size;
     int renderMode;
 
-    Object(GraphicsManager* parent, TextureManager* textures, std::string name,
+    Object(GraphicsManager* parent, std::string name,
         std::shared_ptr<std::vector<GLfloat>> vert,
         std::shared_ptr<std::vector<GLfloat>> tex,
         std::shared_ptr<std::vector<GLfloat>> norm);
@@ -94,16 +98,12 @@ public:
 
     std::tuple<GLfloat, GLfloat, GLfloat> getColor();
     void setColor(GLfloat r, GLfloat g, GLfloat b);
-    // TODO: link texture with object - needs texture menu (wxListBox)
-    void setTexture(unsigned int idx);
     void draw();
 
 private:
     GraphicsManager* parentManager;
-    TextureManager* texManager;
     VertexBuffer* vertexBuffer;
     VertexArray* vertexArray;
-    std::shared_ptr<Texture> tex;
 
     int vertexArrayStride;
     int combinedLen;
@@ -125,18 +125,16 @@ private:
 class TextureManager
 {
 public:
-    TextureManager(GraphicsManager* parent) : parentManager(parent){};
-    // ~TextureManager();
+    TextureManager(GraphicsManager* manager);
 
-    void addTexture(const unsigned char* data, int width, int height)
-        {textures.push_back(
-            std::make_shared<Texture>(parentManager, data, width, height));}
-    
-    std::shared_ptr<Texture> getTexPtr(unsigned int idx)
-        {return (idx < textures.size() ? textures[idx] : nullptr);}
+    void addTexture(const unsigned char* data, int width, int height,
+        std::string name);
+    void deleteTexture(int idx);
+    std::shared_ptr<Texture> getTexPtr(int idx);
+    std::vector<std::string> getAllTextureNames();
 
 private:
-    GraphicsManager* parentManager;
+    GraphicsManager* graphicsManager;
     std::vector<std::shared_ptr<Texture>> textures;
 };
 

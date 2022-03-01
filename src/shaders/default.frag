@@ -15,12 +15,6 @@ uniform vec3 lightPos;
 
 void main()
 {
-    if (useTex == 1)
-    {
-        finalColor = texture(texHandle, vertTexCoord);
-        return;
-    }
-
     if (length(vertNormal) == 0)
     {
         finalColor = vec4(vertColor, 1.0f);
@@ -35,6 +29,13 @@ void main()
     float diffuse = max(
         dot(normalize(vertNormal), normalize(lightPos - vertPos)), 0.0f);
     vec3 diffuseLight = diffuse * diffuseLightStrength * lightColor;
+
+    if (useTex == 1)
+    {
+        vec4 lightVec = vec4((ambientLight + diffuseLight), 1.0f);
+        finalColor = lightVec * texture(texHandle, vertTexCoord);
+        return;
+    }
 
     finalColor = vec4((ambientLight + diffuseLight) * vertColor, 1.0f);
 }
