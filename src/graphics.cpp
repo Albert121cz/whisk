@@ -275,6 +275,19 @@ void GraphicsManager::renameObject(int idx, std::string newName)
 }
 
 
+void GraphicsManager::setObjectColor(int idx, GLfloat r, GLfloat g, GLfloat b)
+{
+    #ifdef DEBUG
+        std::ostringstream messageStream;
+        messageStream << "Object color changed: " << objects[idx]->objectName
+            << " -> " << r << "x" << g << "x" << b;
+        sendToLog(messageStream.str());
+    #endif /* DEBUG */
+
+    objects[idx]->setColor(r, g, b);
+}
+
+
 void GraphicsManager::duplicateObject(int idx)
 {
     // integer is cast to size_t, so the compiler doesn't flag this with

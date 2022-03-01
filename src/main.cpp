@@ -296,6 +296,7 @@ void ObjectPanel::onCheckBox(wxCommandEvent& event)
 wxBEGIN_EVENT_TABLE(ObjectButtonPanel, wxPanel)
     EVT_BUTTON(wxID_NEW, ObjectButtonPanel::onNew)
     EVT_BUTTON(ID_RENAME, ObjectButtonPanel::onRename)
+    EVT_BUTTON(ID_COLOR, ObjectButtonPanel::onColor)
     EVT_BUTTON(ID_DUPLICATE, ObjectButtonPanel::onDuplicate)
     EVT_BUTTON(wxID_DELETE, ObjectButtonPanel::onDelete)
 wxEND_EVENT_TABLE()
@@ -316,6 +317,9 @@ ObjectButtonPanel::ObjectButtonPanel(std::shared_ptr<GraphicsManager> manager,
 
     wxButton* renameButton = new wxButton(this, ID_RENAME, "Rename");
     sizer->Add(renameButton, 0, wxTOP, 5);
+
+    wxButton* colorButton = new wxButton(this, ID_COLOR, "Color");
+    sizer->Add(colorButton, 0, wxTOP, 5);
 
     wxButton* duplicateButton = new wxButton(this, ID_DUPLICATE, "Duplicate");
     sizer->Add(duplicateButton, 0, wxTOP, 5);
@@ -343,6 +347,23 @@ void ObjectButtonPanel::onRename(wxCommandEvent&)
     RenameFrame* frame = new RenameFrame(mainFrame, graphicsManager, idx);
     frame->Show();
     mainFrame->Disable();
+}
+
+
+void ObjectButtonPanel::onColor(wxCommandEvent&)
+{
+    int idx = targetListbox->GetSelection();
+    if (idx == wxNOT_FOUND)
+        return;
+    
+    wxColourDialog dialog(mainFrame);
+
+    if (dialog.ShowModal() == wxID_CANCEL)
+        return;
+
+    wxColour clr = dialog.GetColourData().GetColour();
+
+    graphicsManager->setObjectColor(idx, clr.Red(), clr.Green(), clr.Blue());
 }
 
 

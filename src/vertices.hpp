@@ -104,6 +104,7 @@ private:
     VertexArray* vertexArray;
     std::shared_ptr<Texture> tex;
 
+    int vertexArrayStride;
     int combinedLen;
     GLfloat* combinedData;
 

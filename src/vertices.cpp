@@ -176,9 +176,11 @@ Object::Object(GraphicsManager* parent, TextureManager* textures,
     rotation = glm::vec3(0.0f, 0.0f, 0.0f);
     size = glm::vec3(1.0f, 1.0f, 1.0f);
     renderMode = FILL;
-    setColor(1.0f, 0.0f, 0.0f);
+    color[0] = 1.0f;
+    color[1] = 0.0f;
+    color[2] = 0.0f;
 
-    int vertexArrayStride = 11;
+    vertexArrayStride = 11;
 
 // combined array includes position of vertices (x, y, z), colors of vertices
 // without texture (r, g, b), position of vertices in texture (x, y) and
@@ -270,6 +272,13 @@ void Object::setColor(GLfloat r, GLfloat g, GLfloat b)
     color[0] = r;
     color[1] = g;
     color[2] = b;
+
+    // color is on positions 3, 4 and 5
+    for (int vertex = 0; vertex < combinedLen / vertexArrayStride; vertex++)
+        for (int tone = 0; tone < 3; tone++)
+            combinedData[vertex * vertexArrayStride + tone] = color[tone];
+    
+    vertexBuffer->sendData(combinedData, combinedLen);
 }
 
 

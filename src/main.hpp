@@ -13,6 +13,7 @@
 #include <wx/wfstream.h>
 #include <wx/glcanvas.h>
 #include <wx/spinctrl.h>
+#include <wx/colordlg.h>
 #include <wx/wx.h>
 #include <GL/glew.h>
 #include <GL/wglew.h>
@@ -139,12 +140,14 @@ private:
 
     void onNew(wxCommandEvent&);
     void onRename(wxCommandEvent&);
+    void onColor(wxCommandEvent&);
     void onDuplicate(wxCommandEvent&);
     void onDelete(wxCommandEvent&);
 
-    enum buttonEvents
+    enum ButtonEvents
     {
         ID_RENAME,
+        ID_COLOR,
         ID_DUPLICATE
     };
 

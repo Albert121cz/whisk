@@ -50,6 +50,7 @@ public:
         std::shared_ptr<std::vector<GLfloat>> texVertices = nullptr,
         std::shared_ptr<std::vector<GLfloat>> normals = nullptr);
     void renameObject(int idx, std::string newName);
+    void setObjectColor(int idx, GLfloat r, GLfloat g, GLfloat b);
     void duplicateObject(int idx);
     void deleteObject(int idx);
     void showOrHideObject(int idx);
