@@ -114,6 +114,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
 
     std::string keyword;
     std::vector<std::tuple<int, int, int>> faceData;
+    std::pair<int, int> lineData;
 
     if (vertices == nullptr)
         vertices = std::make_shared<std::vector<GLfloat>>();
@@ -124,8 +125,8 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
     if (normals == nullptr)
         normals = std::make_shared<std::vector<GLfloat>>();
 
-    // std::shared_ptr<std::vector<GLuint>> indices(new std::vector<GLuint>());
-    std::vector<GLuint> indices;
+    std::shared_ptr<std::vector<GLfloat>> finalLineVertices =
+        std::make_shared<std::vector<GLfloat>>();
     std::shared_ptr<std::vector<GLfloat>> finalVertices =
         std::make_shared<std::vector<GLfloat>>();
     std::shared_ptr<std::vector<GLfloat>> finalTextures =
@@ -147,7 +148,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
             
             if (keyword == "v")
             {
-                // keyword x y z
+                // v x-coord y-coord z-coord
                 if (line.size() != 4)
                     throw std::invalid_argument("Incorrect number of params");
                 
@@ -156,7 +157,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
             }
             else if (keyword == "vt")
             {
-                // keyword x y
+                // vt x-coord y-coord
                 if (line.size() != 3)
                     throw std::invalid_argument("Incorrect number of params");
                 
@@ -165,7 +166,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
             }
             else if (keyword == "vn")
             {
-                // keyword x y z
+                // vn x-coord y-coord z-coord
                 if (line.size() != 4)
                     throw std::invalid_argument("Incorrect number of params");
                 
@@ -174,8 +175,8 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
             }
             else if (keyword == "f")
             {
-                // keyword vertex1/texture1/normal1 vertex2/texture2/normal2...
-                if (line.size() == 1)
+                // f vertex1/texture1/normal1 vertex2/texture2/normal2...
+                if (line.size() < 4)
                     throw std::invalid_argument("The params are missing");
                 
                 faceData = parseFace(vertices->size(), line);
@@ -183,10 +184,8 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
                 if (line.size() > 4)
                     triangulate(&faceData, vertices);
                 
-                try{
                 for (std::tuple<int, int, int> point : faceData)
                 {
-                    indices.push_back(std::get<0>(point));
                     finalVertices->push_back(
                         vertices->at(std::get<0>(point) * 3));
                     finalVertices->push_back(
@@ -212,14 +211,37 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
                             normals->at(std::get<2>(point) * 3 + 2));
                     }
                 }
-                }catch(std::exception& exc)
+            }
+            else if (keyword == "l")
+            {
+                // l vertex1 vertex2
+                if (line.size() != 3)
+                    throw std::invalid_argument("The params are missing");
+                
+                lineData = std::make_pair(
+                    std::stoi(line[1]), std::stoi(line[2]));
+                
+                for (int vertIdx : {lineData.first, lineData.second})
                 {
-                    std::cout << "GOT OUT OF ARRAY " << exc.what() << std::endl;
+                    if (vertIdx < 0)
+                        vertIdx = vertices->size() + vertIdx;
+                    else if (static_cast<size_t>(vertIdx) >= vertices->size())
+                        throw std::invalid_argument(
+                            "Invalid vertex index in face");
+                    else
+                        vertIdx--;
+
+                    finalLineVertices->push_back(
+                        vertices->at(vertIdx * 3));
+                    finalLineVertices->push_back(
+                        vertices->at(vertIdx * 3 + 1));
+                    finalLineVertices->push_back(
+                        vertices->at(vertIdx * 3 + 2));
                 }
             }
             else if (keyword == "o")
             {
-                // keyword partofname1 partofname2...
+                // o partofname1 partofname2...
                 if (line.size() == 1)
                     throw std::invalid_argument("The name is missing");
                 
@@ -235,10 +257,6 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
                     name += line[i];
                 nameModified = true;
             }
-            else
-            {
-                // sendToLog("Unknown keyword: " + keyword);
-            }
         }
     }
     catch (std::invalid_argument& exception)
@@ -250,9 +268,14 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
     // the name has to fit inside the wxCheckListBox
     if (name.size() > 24)
         name.resize(24);
+    
+    // add all line vertices to the end of finalVertices
+    finalVertices->insert(finalVertices->end(),
+        finalLineVertices->begin(), finalLineVertices->end());
 
-    objects.push_back(std::make_unique<Object>(this, name, finalVertices,
-        finalTextures, finalNormals));
+    objects.push_back(std::make_unique<Object>(this, name,
+        finalLineVertices->size(), finalVertices, finalTextures,
+        finalNormals));
     
     #ifdef DEBUG
         std::ostringstream messageStream;
@@ -732,7 +755,9 @@ glm::mat4 Camera::viewMatrix()
     toTarget = glm::normalize(toTarget) * radius;
 
     target += glm::normalize(glm::cross(toTarget, upDirection)) * horizMove;
-    target -= glm::normalize(upDirection) * vertiMove;
+    target -= glm::normalize(glm::cross(
+        glm::normalize(glm::cross(toTarget, upDirection)),
+        glm::normalize(toTarget))) * vertiMove;
 
     return glm::lookAt(target - toTarget, target, upDirection);
 }

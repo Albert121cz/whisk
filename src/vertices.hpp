@@ -89,7 +89,7 @@ public:
     glm::vec3 size;
     int renderMode;
 
-    Object(GraphicsManager* parent, std::string name,
+    Object(GraphicsManager* parent, std::string name, int lineCount,
         std::shared_ptr<std::vector<GLfloat>> vert,
         std::shared_ptr<std::vector<GLfloat>> tex,
         std::shared_ptr<std::vector<GLfloat>> norm);
@@ -105,6 +105,7 @@ private:
     VertexBuffer* vertexBuffer;
     VertexArray* vertexArray;
 
+    int lineCount;
     int vertexArrayStride;
     int combinedLen;
     GLfloat* combinedData;

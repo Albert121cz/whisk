@@ -181,11 +181,11 @@ GLuint64 Texture::getHandle()
 }
 
 
-Object::Object(GraphicsManager* parent, std::string name,
+Object::Object(GraphicsManager* parent, std::string name, int lines,
     std::shared_ptr<std::vector<GLfloat>> vert,
     std::shared_ptr<std::vector<GLfloat>> texVert,
     std::shared_ptr<std::vector<GLfloat>> norm)
-    :  objectName(name), parentManager(parent)
+    :  objectName(name), parentManager(parent), lineCount(lines)
 {
     show = true;
     hasTex = false;
@@ -219,7 +219,7 @@ Object::Object(GraphicsManager* parent, std::string name,
 
         for (size_t texIdx = 0; texIdx < 2; texIdx++)
         {
-            if (texVert->size() == 0)
+            if (texVert->size() <= vertex)
                 texVal = 0.0f;
             else
                 texVal = texVert->at(vertex * 2 + texIdx);
@@ -229,7 +229,7 @@ Object::Object(GraphicsManager* parent, std::string name,
 
         for (size_t normIdx = 0; normIdx < 3; normIdx++)
         {
-            if (norm->size() == 0)
+            if (norm->size() <= vertex)
                 normVal = 0.0f;
             else
                 normVal = norm->at(vertex * 3 + normIdx);
@@ -267,6 +267,7 @@ Object::Object(const Object& old)
     parentManager = old.parentManager;
     tex = old.tex;
 
+    lineCount = old.lineCount;
     vertexArrayStride = old.vertexArrayStride;
     combinedLen = old.combinedLen;
     combinedData = new GLfloat[combinedLen];
@@ -355,7 +356,8 @@ void Object::draw()
     glPolygonMode(GL_FRONT_AND_BACK, oglRenderMode);
 
     vertexArray->bind();
-    glDrawArrays(GL_TRIANGLES, 0, combinedLen / 11);
+    glDrawArrays(GL_TRIANGLES, 0, combinedLen / 11 - lineCount / 3);
+    glDrawArrays(GL_LINES, combinedLen / 11 - lineCount / 3, combinedLen / 11);
 }
 
 
