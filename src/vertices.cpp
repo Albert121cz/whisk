@@ -219,7 +219,7 @@ Object::Object(GraphicsManager* parent, std::string name, int lines,
 
         for (size_t texIdx = 0; texIdx < 2; texIdx++)
         {
-            if (texVert->size() <= vertex)
+            if (texVert->size() <= vertex * 2 + texIdx)
                 texVal = 0.0f;
             else
                 texVal = texVert->at(vertex * 2 + texIdx);
@@ -229,7 +229,7 @@ Object::Object(GraphicsManager* parent, std::string name, int lines,
 
         for (size_t normIdx = 0; normIdx < 3; normIdx++)
         {
-            if (norm->size() <= vertex)
+            if (norm->size() <= vertex * 3 + normIdx)
                 normVal = 0.0f;
             else
                 normVal = norm->at(vertex * 3 + normIdx);
@@ -258,11 +258,16 @@ Object::~Object()
 Object::Object(const Object& old)
 {
     show = old.show;
+    hasTex = old.hasTex;
+    texHandle = old.texHandle;
     objectName = old.objectName + " copy";
     position = old.position;
     rotation = old.rotation;
     size = old.size;
     renderMode = old.renderMode;
+
+    for (int i = 0; i < 3; i++)
+        color[i] = old.color[i];
 
     parentManager = old.parentManager;
     tex = old.tex;
@@ -273,9 +278,6 @@ Object::Object(const Object& old)
     combinedData = new GLfloat[combinedLen];
     for (int i = 0; i < combinedLen; i++)
         combinedData[i] = old.combinedData[i];
-
-    for (int i = 0; i < 3; i++)
-        color[i] = old.color[i];
 
     vertexBuffer = new VertexBuffer(*old.vertexBuffer);
 

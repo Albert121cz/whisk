@@ -6,9 +6,10 @@ wxIMPLEMENT_APP(App);
 
 bool App::OnInit()
 {
+    // wxWidgets image handlers are used to open texture images
     wxInitAllImageHandlers();
 
-    frame = new MainFrame("Hello World", wxDefaultPosition, wxSize(800, 600));
+    frame = new MainFrame();
 
     if (!frame->openGLInitialized())
         return false;    
@@ -28,9 +29,8 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_CLOSE(MainFrame::onClose)
 wxEND_EVENT_TABLE()
 
-MainFrame::MainFrame(const wxString& title,
-                     const wxPoint& pos, const wxSize& size)
-         : wxFrame(NULL, wxID_ANY, title, pos, size)
+MainFrame::MainFrame()
+    : wxFrame(NULL, wxID_ANY, "OpenGL", wxDefaultPosition, wxSize(800, 600))
 {
     #ifdef DEBUG
         logger = new wxLogStream(&std::cout);
@@ -55,27 +55,25 @@ MainFrame::MainFrame(const wxString& title,
 
     SetMenuBar(menuBar);
 
-    CreateStatusBar(2);
+    CreateStatusBar();
 
     wxGLAttributes glDefAttrs;
     glDefAttrs.PlatformDefaults().Defaults().EndList();
     bool supported = wxGLCanvas::IsDisplaySupported(glDefAttrs);
 
-    if (supported)
+    if (!supported)
     {
-        wxLogVerbose("The display is supported with default attributes");
-
-        canvas = new Canvas(this, glDefAttrs);
-        mainSizer->Add(canvas, 1, wxEXPAND);
-
-        SidePanel* side = new SidePanel(this, canvas->getGraphicsManager());
-        mainSizer->Add(side, 0, wxEXPAND);
+        canvas = nullptr;
+        wxMessageBox("OpenGL failed to load", "OpenGL error",
+        wxOK | wxICON_ERROR, this);
+        return;
     }
-    else
-    {
-        wxLogError("The display is not supported with default attributes");
-        canvas = NULL;
-    }
+
+    canvas = new Canvas(this, glDefAttrs);
+    mainSizer->Add(canvas, 1, wxEXPAND);
+
+    SidePanel* side = new SidePanel(this, canvas->getGraphicsManager());
+    mainSizer->Add(side, 0, wxEXPAND);
 
     SetMinSize(wxSize(800, 600));
     SetSizer(mainSizer);
@@ -84,7 +82,7 @@ MainFrame::MainFrame(const wxString& title,
 
 bool MainFrame::openGLInitialized()
 {
-    if (canvas == NULL)
+    if (canvas == nullptr)
         return false;
     
     if (!canvas->wxGLCtxExists())
@@ -102,6 +100,7 @@ void MainFrame::onObjLoad(wxCommandEvent&)
     wxFileDialog fileDialog(this, "Load OBJ file", "", "", 
                     "OBJ (*.obj)|*.obj", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
     
+    // test if the user actually selected something
     if (fileDialog.ShowModal() == wxID_CANCEL)
         return;
 
@@ -119,8 +118,8 @@ void MainFrame::onObjLoad(wxCommandEvent&)
 
 void MainFrame::onAbout(wxCommandEvent&)
 {
-    wxMessageBox("This is NOT a wxWidgets' Hello world sample",
-                 "About Hello World", wxOK | wxICON_INFORMATION);
+    wxMessageBox("This is a programming project for maturita exam",
+        "About", wxOK | wxICON_INFORMATION);
 }
 
 
@@ -133,15 +132,14 @@ void MainFrame::onExit(wxCommandEvent&)
 // https://docs.wxwidgets.org/3.0/classwx_close_event.html
 void MainFrame::onClose(wxCloseEvent& event)
 {
-    if (event.CanVeto())
-    {
+    if (!event.CanVeto())
+        return;
 
-        if (wxMessageBox("Do you wish to close the app?", "Quit confirmation",
-            wxICON_QUESTION | wxYES_NO) == wxYES)
-            Destroy();
-        else
-            event.Veto();
-    }
+    if (wxMessageBox("Do you wish to close the app?", "Quit confirmation",
+        wxICON_QUESTION | wxYES_NO) == wxYES)
+        Destroy();
+    else
+        event.Veto();
 }
 
 
@@ -207,6 +205,8 @@ SidePanelRefreshTimer::SidePanelRefreshTimer(
     : graphicsManager(manager), objectSettings(settings), listbox(list)
 {
     lastSelected = wxNOT_FOUND;
+
+    // refreshes every ~48 ms
     StartOnce(48);
 }
 
@@ -223,6 +223,7 @@ void SidePanelRefreshTimer::Notify()
 {
     std::vector<std::string> newNames = graphicsManager->getAllObjectNames();
 
+    // check every item in the listbox and edit the list if anything changed
     for (size_t i = 0; i < newNames.size(); i++)
     {
         if (i >= names.GetCount())
@@ -249,11 +250,13 @@ void SidePanelRefreshTimer::Notify()
     int idx = listbox->GetSelection();
     if (lastSelected != listbox->GetSelection())
     {
+        // refreshing is done by ObjectSettings itself
         wxEvent* event = new wxCommandEvent(REFRESH_OBJECT_SETTINGS);
         wxQueueEvent(objectSettings, event);
         lastSelected = idx;
     }
 
+    // launch the time again
     StartOnce();
 }
 
@@ -273,7 +276,6 @@ wxBEGIN_EVENT_TABLE(ObjectButtonPanel, wxPanel)
     EVT_BUTTON(ID_DUPLICATE, ObjectButtonPanel::onDuplicate)
     EVT_BUTTON(wxID_DELETE, ObjectButtonPanel::onDelete)
 wxEND_EVENT_TABLE()
-
 
 ObjectButtonPanel::ObjectButtonPanel(std::shared_ptr<GraphicsManager> manager,
     wxPanel* parentPanel, MainFrame* main, wxCheckListBox* target)
@@ -322,6 +324,8 @@ void ObjectButtonPanel::onRename(wxCommandEvent&)
     
     RenameFrame* frame = new RenameFrame(mainFrame, graphicsManager, idx);
     frame->Show();
+
+    // prevent user from interacting with the main frame
     mainFrame->Disable();
 }
 
@@ -560,7 +564,7 @@ void TextureFrameButtonPanel::onNew(wxCommandEvent&)
         return;
     }
 
-    // mirror vertically
+    // texture need to be vertically mirrored for OpenGL to show them correctly
     image = image.Mirror(false);
 
     std::string path(loadFileDialog.GetPath());
@@ -574,7 +578,7 @@ void TextureFrameButtonPanel::onNew(wxCommandEvent&)
 
     wxString name(fileName[0]);
     texManager->addTexture(image.GetData(),
-        image.GetWidth(), image.GetHeight(),name.ToStdString());
+        image.GetWidth(), image.GetHeight(), name.ToStdString());
 
     targetListBox->InsertItems(1, &name, targetListBox->GetCount());
 }
@@ -768,7 +772,7 @@ void ObjectSettings::onSpinChange(wxSpinDoubleEvent& event)
     
     *values[fieldID] = fieldValue;
 
-    // size has 3 dimensions and user edits them all at once
+    // user edits all 3 size dimensions at once
     if (fieldID == SIZE)
     {
         *values[SIZE + 1] = fieldValue;
@@ -825,7 +829,7 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
 
     wxGLContextAttrs ctxAttrs;
     ctxAttrs.PlatformDefaults().OGLVersion(OGL_MAJOR_VERSION,
-                                            OGL_MINOR_VERSION).EndList();
+        OGL_MINOR_VERSION).EndList();
     wxGLCtx = new wxGLContext(this, NULL, &ctxAttrs);
 
     if (!wxGLCtx->IsOK())
@@ -912,12 +916,6 @@ void Canvas::flip()
 }
 
 
-void Canvas::addTex(const unsigned char* data, int width, int height)
-{
-    graphicsManager->getTexManagerPtr()->addTexture(data, width, height, "cmon");
-}
-
-
 float Canvas::viewportAspectRatio()
 {
     float width = static_cast<float>(viewportDims.first);
@@ -928,7 +926,7 @@ float Canvas::viewportAspectRatio()
 
 void Canvas::log(std::string str)
 {
-    wxLogVerbose(str.c_str());
+    wxLogVerbose("%s", str);
 }
 
 
@@ -974,11 +972,13 @@ void Canvas::onRender(wxCommandEvent&)
 
     std::chrono::steady_clock::time_point currentFlip;
     currentFlip = std::chrono::steady_clock::now();
+
     float difference = std::chrono::duration_cast<std::chrono::microseconds>
         (currentFlip - lastFlip).count();
     FPS = (FPS * FPSSmoothing) + (1000000/difference * (1.0-FPSSmoothing));
     lastFlip = currentFlip;
-    parentFrame->SetStatusText(wxString::Format(wxT("%.1f FPS"), FPS), 1);
+
+    parentFrame->SetStatusText(wxString::Format(wxT("%.1f FPS"), FPS));
 
     // give control back to the app to handle all UI elements and events
     wxGetApp().Yield();

@@ -55,7 +55,7 @@ private:
 class MainFrame : public wxFrame
 {
 public:
-    MainFrame(const wxString& title, const wxPoint& pos, const wxSize& size);
+    MainFrame();
     bool openGLInitialized();
 
 private:
@@ -283,7 +283,6 @@ public:
     bool wxGLCtxExists();
     bool graphicsManagerExists();
     void flip();
-    void addTex(const unsigned char* data, int width, int height);
     float viewportAspectRatio();
     void log(std::string str);
     bool extCheck(std::pair<bool, std::string> in);

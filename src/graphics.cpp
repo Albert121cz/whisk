@@ -14,13 +14,17 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
         glDebugMessageCallback(oglDebug::GLDebugMessageCallback, NULL);
     #endif /* DEBUG */
 
+    // depth tests chekc if the fragment (which it is currently rendering)
+    // should be on top
     glEnable(GL_DEPTH_TEST);
 
+    // v-sync
     if (WGLEW_EXT_swap_control_tear)
         wglSwapIntervalEXT(-1);
     else
         wglSwapIntervalEXT(1);
 
+    // loading vertex and fragment shaders
     shaders = new ShaderManager(this);
     shaders->addShader("default.vert");
     shaders->addShader("default.frag");
@@ -67,7 +71,6 @@ void GraphicsManager::render()
     
     setUniformVector(lightColor, "lightColor");
     setUniformVector(camera->getPos() + cameraToLight, "lightPos");
-    // setUniformVector(glm::vec3(2.0, 2.0, 2.0), "lightPos");
 
     for (auto it = objects.begin(); it != objects.end(); it++)
         if ((*it)->show)
@@ -125,6 +128,8 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
     if (normals == nullptr)
         normals = std::make_shared<std::vector<GLfloat>>();
 
+    // all final arrays are only for 1 object - they are not shared between
+    // objects in the same file
     std::shared_ptr<std::vector<GLfloat>> finalLineVertices =
         std::make_shared<std::vector<GLfloat>>();
     std::shared_ptr<std::vector<GLfloat>> finalVertices =
@@ -146,6 +151,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
             line = data->at(lineIdx);
             keyword = line.front();
             
+            // vertex
             if (keyword == "v")
             {
                 // v x-coord y-coord z-coord
@@ -155,6 +161,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
                 for (size_t i = 1; i < line.size(); i++)
                     vertices->push_back(std::stof(line[i]));
             }
+            // texture vertex
             else if (keyword == "vt")
             {
                 // vt x-coord y-coord
@@ -164,6 +171,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
                 for (size_t i = 1; i < line.size(); i++)
                     texVertices->push_back(std::stof(line[i]));
             }
+            // vertex normal
             else if (keyword == "vn")
             {
                 // vn x-coord y-coord z-coord
@@ -173,6 +181,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
                 for (size_t i = 1; i < line.size(); i++)
                     normals->push_back(std::stof(line[i]));
             }
+            // face
             else if (keyword == "f")
             {
                 // f vertex1/texture1/normal1 vertex2/texture2/normal2...
@@ -212,6 +221,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
                     }
                 }
             }
+            // line
             else if (keyword == "l")
             {
                 // l vertex1 vertex2
@@ -239,12 +249,14 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
                         vertices->at(vertIdx * 3 + 2));
                 }
             }
+            // object name
             else if (keyword == "o")
             {
                 // o partofname1 partofname2...
                 if (line.size() == 1)
                     throw std::invalid_argument("The name is missing");
                 
+                // recursively call this function if there is another object
                 if (nameModified)
                 {
                     newObject(file, lineIdx, data, vertices, texVertices,
@@ -278,9 +290,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
         finalNormals));
     
     #ifdef DEBUG
-        std::ostringstream messageStream;
-        messageStream << "Object added: " << name;
-        sendToLog(messageStream.str());
+        sendToLog("Object added" + name);
     #endif /* DEBUG */
 }
 
@@ -288,10 +298,8 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
 void GraphicsManager::renameObject(int idx, std::string newName)
 {
     #ifdef DEBUG
-        std::ostringstream messageStream;
-        messageStream << "Object name changed: " << objects[idx]->objectName
-            << " -> " << newName;
-        sendToLog(messageStream.str());
+        sendToLog("Object name changed: " + objects[idx]->objectName + " -> " +
+            newName);
     #endif /* DEBUG */
 
     objects[idx]->objectName = newName;
@@ -301,10 +309,9 @@ void GraphicsManager::renameObject(int idx, std::string newName)
 void GraphicsManager::setObjectColor(int idx, GLfloat r, GLfloat g, GLfloat b)
 {
     #ifdef DEBUG
-        std::ostringstream messageStream;
-        messageStream << "Object color changed: " << objects[idx]->objectName
-            << " -> " << r << "x" << g << "x" << b;
-        sendToLog(messageStream.str());
+        sendToLog("Object color changed: " + objects[idx]->objectName + " -> " +
+            std::to_string(r) + "x" + std::to_string(g) + "x" +
+            std::to_string(b));
     #endif /* DEBUG */
 
     objects[idx]->setColor(r, g, b);
@@ -315,10 +322,8 @@ void GraphicsManager::setObjectColor(int idx, GLfloat r, GLfloat g, GLfloat b)
 void GraphicsManager::setObjectTex(int idx, std::shared_ptr<Texture> tex)
 {
     #ifdef DEBUG
-        std::ostringstream messageStream;
-        messageStream << "Object texture changed: " << objects[idx]->objectName
-            << " -> " << tex->textureName;
-        sendToLog(messageStream.str());
+        sendToLog("Object texture changed: " + objects[idx]->objectName + " -> "
+            + tex->textureName);
     #endif /* DEBUG */
 
     objects[idx]->tex = tex;
@@ -339,9 +344,7 @@ void GraphicsManager::duplicateObject(int idx)
         std::make_unique<Object>(*objects[idx]));
     
     #ifdef DEBUG
-        std::ostringstream messageStream;
-        messageStream << "Object duplicated: " << objects[idx]->objectName;
-        sendToLog(messageStream.str());
+        sendToLog("Object duplicated: " + objects[idx]->objectName);
     #endif /* DEBUG */
 }
 
@@ -352,9 +355,7 @@ void GraphicsManager::deleteObject(int idx)
         return;
 
     #ifdef DEBUG
-        std::ostringstream messageStream;
-        messageStream << "Object deleted: " << objects[idx]->objectName;
-        sendToLog(messageStream.str());
+        sendToLog("Object deleted: " + objects[idx]->objectName);
     #endif /* DEBUG */
 
     objects.erase(objects.begin() + idx);
@@ -371,9 +372,7 @@ void GraphicsManager::showOrHideObject(int idx)
         objects[idx]->show = false;
 
         #ifdef DEBUG
-            std::ostringstream messageStream;
-            messageStream << "Object hid: " << objects[idx]->objectName;
-            sendToLog(messageStream.str());
+            sendToLog("Object hid: " + objects[idx]->objectName);
         #endif /* DEBUG */
     }
     else
@@ -381,9 +380,7 @@ void GraphicsManager::showOrHideObject(int idx)
         objects[idx]->show = true;
 
         #ifdef DEBUG
-            std::ostringstream messageStream;
-            messageStream << "Object showed: " << objects[idx]->objectName;
-            sendToLog(messageStream.str());
+            sendToLog("Object showed: " + objects[idx]->objectName);
         #endif /* DEBUG */
     }
 }
@@ -447,6 +444,8 @@ std::vector<std::vector<std::string>> GraphicsManager::parseFile(
 {
     std::ifstream fileStream(name);
 
+    // every line is separate vector and each block of characters separated by
+    // spaces is in separate strings
     std::vector<std::vector<std::string>> fileVector;
 
     std::string tempLine, tempSegment;
@@ -500,7 +499,7 @@ std::vector<std::vector<std::string>> GraphicsManager::parseFile(
 std::vector<std::tuple<int, int, int>> GraphicsManager::parseFace(
     size_t vertices, std::vector<std::string> data)
 {
-    // first tuple signals if the data has texture coords, the second - normals
+    // first - vert idx, second - texture vert idx, third - vert normal idx
     std::vector<std::tuple<int, int, int>> ret;
 
     std::stringstream valueStream;
@@ -521,7 +520,7 @@ std::vector<std::tuple<int, int, int>> GraphicsManager::parseFace(
 
             saveValue = std::stoi(tempValue);
 
-            // faces can be indexed negatively, and are 1-based
+            // faces can be indexed negatively from the end, and are 1-based
             if (saveValue < 0)
                 saveValue = vertices + saveValue;
             else if (static_cast<size_t>(saveValue) >= vertices)
@@ -567,6 +566,7 @@ void GraphicsManager::triangulate(
 
     std::list<vertex> verticesList;
 
+    // get positions of the vertices in the list
     for (size_t i = 0; i < indices->size(); i++)
     {
         verticesList.push_back(vertex(glm::vec3(
@@ -575,6 +575,7 @@ void GraphicsManager::triangulate(
             allVertices->at(std::get<0>(indices->at(i)) * 3 + 2)), i));
     }
     
+    // delete duplicates
     std::list<vertex>::iterator delIt = verticesList.begin();
     std::list<vertex>::iterator checkIt;
     while (delIt != verticesList.end())
@@ -592,7 +593,10 @@ void GraphicsManager::triangulate(
 
     std::list<vertex>::iterator it = verticesList.begin();
 
+    // map is used to store indices from which are contructed the triangles
     std::vector<GLuint> map;
+
+    // to get oriented angle in the face a reference axis is needed
     glm::vec3 rotationAxis = glm::normalize(
         glm::cross(it->pos - std::next(it, 1)->pos,
         std::next(it, 2)->pos - std::next(it, 1)->pos));
@@ -605,9 +609,14 @@ void GraphicsManager::triangulate(
 
     while (verticesList.size() > 3)
     {
+        // run around the polygon again, because it is possible that an ear was
+        // made by removing a vertex in the previous position
         if (it == verticesList.end())
             it = verticesList.begin();
 
+        // triangleVertices contains vertices from a single testing triangle,
+        // each triangle is tested if it contains some of the other points,
+        // if it doesn't contain any, it is an ear and can be cut off   
         triangleVertices.clear();
         if (it == verticesList.begin())
             triangleVertices.push_back(*std::prev(verticesList.end(), 1));
@@ -641,17 +650,14 @@ void GraphicsManager::triangulate(
                 triangleIt != triangleVertices.end(); triangleIt++)
             {
                 if (triangleIt == triangleVertices.begin())
-                    // prev = triangleVertices.end() - 1;
-                    prev = std::prev(triangleVertices.end(), 1);
+                    prev = triangleVertices.end() - 1;
                 else
-                    // prev = triangleIt - 1;
-                    prev = std::prev(triangleIt, 1);
+                    prev = triangleIt - 1;
 
                 if (triangleIt == triangleVertices.end() - 1)
                     next = triangleVertices.begin();
                 else
-                    // next = triangleIt + 1;
-                    next = std::next(triangleIt, 1);
+                    next = triangleIt + 1;
 
                 vecToPrev = prev->pos - triangleIt->pos;
                 vecToNext = next->pos - triangleIt->pos;
