@@ -143,6 +143,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
     bool nameModified = false;
 
     std::vector<std::string> line;
+    glm::vec3 normal;
 
     try
     {
@@ -190,34 +191,47 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
                 
                 faceData = parseFace(vertices->size(), line);
 
-                if (line.size() > 4)
-                    triangulate(&faceData, vertices);
+                triangulate(&faceData, vertices, &normal);
                 
-                for (std::tuple<int, int, int> point : faceData)
+                for (std::vector<std::tuple<int, int, int>>::iterator it =
+                    faceData.begin(); it != faceData.end(); it++)
                 {
                     finalVertices->push_back(
-                        vertices->at(std::get<0>(point) * 3));
+                        vertices->at(std::get<0>(*it) * 3));
                     finalVertices->push_back(
-                        vertices->at(std::get<0>(point) * 3 + 1));
+                        vertices->at(std::get<0>(*it) * 3 + 1));
                     finalVertices->push_back(
-                        vertices->at(std::get<0>(point) * 3 + 2));
+                        vertices->at(std::get<0>(*it) * 3 + 2));
 
-                    if (std::get<1>(point) != -1)
+                    // if texture vertices are not included in the file
+                    if (std::get<1>(*it) == -1)
                     {
-                        finalTextures->push_back(
-                            texVertices->at(std::get<1>(point) * 2));
-                        finalTextures->push_back(
-                            texVertices->at(std::get<1>(point) * 2 + 1));
+                        finalTextures->push_back(-1);
+                        finalTextures->push_back(-1);
                     }
-                    
-                    if (std::get<2>(point) != -1)
+                    else
+                    {
+                        finalTextures->push_back(
+                            texVertices->at(std::get<1>(*it) * 2));
+                        finalTextures->push_back(
+                            texVertices->at(std::get<1>(*it) * 2 + 1));
+                    }
+                        
+                    // if normals are not included in the file
+                    if (std::get<2>(*it) == -1)
+                    {
+                        finalNormals->push_back(normal.x);
+                        finalNormals->push_back(normal.y);
+                        finalNormals->push_back(normal.z);
+                    }
+                    else
                     {
                         finalNormals->push_back(
-                            normals->at(std::get<2>(point) * 3));
+                            normals->at(std::get<2>(*it) * 3));
                         finalNormals->push_back(
-                            normals->at(std::get<2>(point) * 3 + 1));
+                            normals->at(std::get<2>(*it) * 3 + 1));
                         finalNormals->push_back(
-                            normals->at(std::get<2>(point) * 3 + 2));
+                            normals->at(std::get<2>(*it) * 3 + 2));
                     }
                 }
             }
@@ -290,7 +304,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
         finalNormals));
     
     #ifdef DEBUG
-        sendToLog("Object added" + name);
+        sendToLog("Object added: " + name);
     #endif /* DEBUG */
 }
 
@@ -555,7 +569,7 @@ std::vector<std::tuple<int, int, int>> GraphicsManager::parseFace(
 // https://www.geometrictools.com/Documentation/TriangulationByEarClipping.pdf
 void GraphicsManager::triangulate(
     std::vector<std::tuple<int, int, int>>* indices,
-    std::shared_ptr<std::vector<GLfloat>> allVertices)
+    std::shared_ptr<std::vector<GLfloat>> allVertices, glm::vec3* normalVec)
 {
     struct vertex
     {
@@ -597,8 +611,7 @@ void GraphicsManager::triangulate(
     std::vector<GLuint> map;
 
     // to get oriented angle in the face a reference axis is needed
-    glm::vec3 rotationAxis = glm::normalize(
-        glm::cross(it->pos - std::next(it, 1)->pos,
+    *normalVec = glm::normalize(glm::cross(it->pos - std::next(it, 1)->pos,
         std::next(it, 2)->pos - std::next(it, 1)->pos));
     
     bool outside, skip;
@@ -665,7 +678,7 @@ void GraphicsManager::triangulate(
                 referenceVec = glm::normalize(vecToNext);
 
                 referenceAngle = glm::orientedAngle(referenceVec,
-                    glm::normalize(vecToPrev), rotationAxis);
+                    glm::normalize(vecToPrev), *normalVec);
                 if (referenceAngle > glm::pi<float>())
                 {
                     referenceVec = glm::normalize(vecToPrev);
@@ -675,7 +688,7 @@ void GraphicsManager::triangulate(
                 testVec = testIt->pos - triangleIt->pos;
 
                 testAngle = glm::orientedAngle(
-                    referenceVec, glm::normalize(testVec), rotationAxis);
+                    referenceVec, glm::normalize(testVec), *normalVec);
                 
                 if (testAngle > referenceAngle)
                 {

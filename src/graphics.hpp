@@ -80,7 +80,8 @@ private:
     std::vector<std::tuple<int, int, int>> parseFace(size_t vertices,
         std::vector<std::string> data);
     void triangulate(std::vector<std::tuple<int, int, int>>* indices,
-        std::shared_ptr<std::vector<GLfloat>> allVertices);
+        std::shared_ptr<std::vector<GLfloat>> allVertices,
+        glm::vec3* normalVec);
 };
 
 

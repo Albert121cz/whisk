@@ -24,10 +24,9 @@ void main()
     float ambientLightStrength = 0.1f;
     vec3 ambientLight = ambientLightStrength * lightColor;
 
-    // if cos < 0 (angle>90°), keep at 0
     float diffuseLightStrength = 0.85f;
-    float diffuse = max(
-        dot(normalize(vertNormal), normalize(lightPos - vertPos)), 0.0f);
+    float diffuse = abs(
+        dot(normalize(vertNormal), normalize(lightPos - vertPos)));
     vec3 diffuseLight = diffuse * diffuseLightStrength * lightColor;
 
     if (useTex == 1)

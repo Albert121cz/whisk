@@ -1,0 +1,45 @@
+\documentclass[a4paper, 12pt]{report}
+
+\usepackage[czech]{babel}
+\usepackage{datetime2}
+\usepackage{hyperref}
+\usepackage{xevlna}
+\usepackage{blindtext}
+\usepackage[chapter, numbib, nottoc]{tocbibind}
+
+\DTMsetstyle{czech}
+
+\hyphenpenalty=10000
+\setlength{\emergencystretch}{10pt}
+
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{3}
+
+\newcommand{\lastrevdate}[1]{datum poslední revize: \mbox{#1}}
+\newcommand{\citedate}[1]{\mbox{[cit. #1]}}
+
+\addto{\captionsczech}{
+    \renewcommand{\bibname}{Zdroje}
+}
+
+\begin{document}
+\title{Grafická aplikace pro zobrazení tvarů v prostoru}
+\author{Albert Bezděk}
+\maketitle
+\stepcounter{page}
+
+\tableofcontents
+\chapter{Kapitola jedna}
+\section{Sekce jedna}
+\subsection{Podsekce jedna}
+\subsubsection{Podpodsekce jedna}
+
+\blindtext[1]
+\cite{wiki:xxx}
+
+
+\begin{flushleft}
+    \bibliographystyle{czechiso/czechiso}
+    \bibliography{citace.bib}
+\end{flushleft}
+\end{document}

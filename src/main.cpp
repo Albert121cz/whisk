@@ -30,7 +30,7 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
 wxEND_EVENT_TABLE()
 
 MainFrame::MainFrame()
-    : wxFrame(NULL, wxID_ANY, "OpenGL", wxDefaultPosition, wxSize(800, 600))
+    : wxFrame(NULL, wxID_ANY, "Whisk", wxDefaultPosition, wxSize(800, 600))
 {
     #ifdef DEBUG
         logger = new wxLogStream(&std::cout);
@@ -74,6 +74,9 @@ MainFrame::MainFrame()
 
     SidePanel* side = new SidePanel(this, canvas->getGraphicsManager());
     mainSizer->Add(side, 0, wxEXPAND);
+
+    // Icon obtained: https://www.nisbets.co.uk/vogue-heavy-whisk-12in/k546
+    SetIcon(wxIcon("icon.png", wxBITMAP_TYPE_PNG));
 
     SetMinSize(wxSize(800, 600));
     SetSizer(mainSizer);
@@ -494,6 +497,8 @@ TextureFrame::TextureFrame(MainFrame* parent,
     TextureFrameButtonPanel* buttons = new TextureFrameButtonPanel(this,
         mainFrame, manager, listBox, idx);
     sizer->Add(buttons, 0, wxTOP, 2);
+
+    SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_MENU));
 
     SetSizer(sizer);
 
