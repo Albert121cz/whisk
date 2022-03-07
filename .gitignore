@@ -1,11 +1,9 @@
 lib/*
 docs/*
-!docs/
+!docs/images/
 !docs/*.tex
 !docs/*.bib
-include/GL
-include/glm
-include/wx
+include/*
 .vscode/*
 build/*
 *.o

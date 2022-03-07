@@ -91,8 +91,9 @@ void VertexArray::enable()
     for (auto it = buffers.begin(); it != buffers.end(); it++)
         glBindBuffer((*it).first, (*it).second);
 
-    //  pos  | color | tex | normal 
-    // X Y Z | R G B | X Y | X Y X
+    // data structure inside vertex array
+    //  pos  | color | tex | normal
+    // X Y Z | R G B | X Y | X Y Z
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), 
         (GLvoid*)0);
     glEnableVertexAttribArray(0);

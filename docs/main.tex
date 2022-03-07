@@ -6,11 +6,21 @@
 \usepackage{xevlna}
 \usepackage{blindtext}
 \usepackage[chapter, numbib, nottoc]{tocbibind}
+\usepackage{beuron}
 
 \DTMsetstyle{czech}
 
 \hyphenpenalty=10000
-\setlength{\emergencystretch}{10pt}
+\hbadness=10000
+\setlength{\emergencystretch}{30pt}
+
+\setlength{\parindent}{0em}
+
+\newlength{\bodyparskip}
+\setlength{\bodyparskip}{0.7em}
+\newlength{\tocparskip}
+\setlength{\tocparskip}{0.2em}
+\setlength{\parskip}{\bodyparskip}
 
 \setcounter{tocdepth}{3}
 \setcounter{secnumdepth}{3}
@@ -23,20 +33,65 @@
 }
 
 \begin{document}
-\title{Grafická aplikace pro zobrazení tvarů v prostoru}
-\author{Albert Bezděk}
+%
+\title{
+    {\fontsize{65}{75}\selectfont \textbeuron{Whisk}} \\ [0.7cm]
+    {\LARGE Dokumentace maturitní práce}
+}
+\author{\LARGE Albert Bezděk}
+\date{Školní rok 2021/2022}
 \maketitle
 \stepcounter{page}
+%
+\chapter*{Zadání maturitní práce}
+\subsection*{Grafická aplikace pro zobrazení tvarů v prostoru}
+Cílem práce je vytvořit v programovacím jazyce C++ s použitím knihoven wxWidgets a OpenGL grafickou aplikaci pro zobrazování 3D objektů a scén. Základní funkcí bude načítání souborů ve formátu Wavefront object (*.obj) a jejich zobrazování v 3D prostoru. Součástí bude uživatelem ovladatelná kamera. Nadstavbovou funkcí může být přidávání nových tvarů a jejich úprava – zvětšování, zmenšování, posouvání, otáčení.
 
+Teoretická část: Historie 3D počítačové grafiky
+
+\pagebreak
+\hspace{0pt}
+\vfill
+Prohlašuji, že jsem na práci pracoval samostatně pouze za pomoci použitých zdrojů a že v práci i v dokumentaci jasně vymezuji, které části kódů jsou mým originálním dílem, které jsou upravenou verzí a které jsou převzaty v plném rozsahu.
+\bigskip
+\begin{flushright}
+    \line(1, 0){100}
+\end{flushright}
+\vfill
+\hspace{0pt}
+
+\setlength{\parskip}{\tocparskip}
 \tableofcontents
-\chapter{Kapitola jedna}
+\setlength{\parskip}{\bodyparskip}
+%
+\chapter{Teoretická část}
+\blindtext[1]
+%
+\chapter{Praktická část}
+\section{Cíle práce}
+Cílem práce bylo naprogramovat aplikaci, jež by umožňovala uživateli nahrát soubory typu Wavefront object (formát vyvinutý americkou společností Wavefront pro jejich program Advanced Visualizer\cite{wiki:obj}; později byl tento formát přijat ostatními společnostmi a je považován za standard). Na toto nahrání jsem se rozhodl nepoužít žádnou knihovnu kromě standardní knihovny C++ a algoritmy na parsování souboru či triangulaci si napsat sám (nebo v případě triangulace sám napsat implementaci již vymyšleného algoritmu). Kromě nahrání souboru by uživatel měl mít možnost si objekty prohlížet pomocí jím ovládané kamery a aranžovat je do scén -- tedy s nimi posouvat, otáčet je, měnit velikost.
+
+Protože vytvoření 3D editoru se všemi funkcemi je projekt úplně jiného měřítka než maturitní práce, a na trhu je mnoho možností včetně projektů otevřeného softwaru (jako je např. Blender), cílem bylo hlavně si vyzkoušet práci s knihovnami, které by byly pravděpodobně použity při vývoji takové aplikace v realitě. Chtěl jsem použít pro prostorové zobrazování knihovnu, která se používá v reálném světě, a také se vyhnout enginům, které právě zprostředkují vývojářům snažší komunikaci s těmito nízkoúrovňovými knihovnami. Kromě prostorového zobrazení cílem bylo vytvořit uživatelské prostředí s nativním ovládáním operačního systému, protože tlačítka nakreslená pomocí API operačního systému jsou více flexibilní a vypadají lépe než ta, jež bych kreslil sám. Například systémová tlačítka už mají animaci a také lze mezi nimi přeskakovat pomocí šipek..
+%
+\chapter{Programovací prostředky}
+\section{Programovací jazyk}
+Téměř celý program byl vytvořen v jazyce C++, který jsem si zvolil proto, že byl se dal celkově popsat jako plně vybaven -- má všechny možnosti objektového programování zároveň s nízkoúrovňovými možnostmi jazyka C. Podle statistik vyhledávání na stránkách společnosti Google se jedná o pátý nejpoužívanější programovací jazyk na světě\cite{github:pypl}. Není interpretovaný, takže nabízí vysoký výkon proti všem interpretovaným jazykům (jako je z populárních jazyků např. Python).
+
+Shadery jsou napsané v jazyce GLSL (OpenGL shading language), což je speciální jazyk právě pro psaní shaderů pro knihovnu OpenGL. Místo GLSL lze zvolit několik alternativ, ale ty nejsou tak časté (bude složitější pro ně najít podporu v případě problémů) a mívají problémy s kompatibilitou.
+\section{Knihovny a externí programy}
+Pro projekt jsem využíval několik knihoven. wxWidgets jsem použil pro grafické ovládání aplikace a načítání obrázků textur. OpenGL bylo použito na prostorové zobrazování -- komunikace s ovladačem grafické karty počítače. Také jsem použil knihovnu GLM (OpenGL Mathematics), jež přidává nové datové typy (vektoru a matice) a operace s nimi. Tyto nové datové typy fungují stejně jako v GLSL a lze je do shaderů posílat přímo.
+%
+\chapter{Instalace}
+\blindtext[1]
+%
+\chapter{Závěr}
+\blindtext[1]
+%
 \section{Sekce jedna}
 \subsection{Podsekce jedna}
 \subsubsection{Podpodsekce jedna}
 
 \blindtext[1]
-\cite{wiki:xxx}
-
 
 \begin{flushleft}
     \bibliographystyle{czechiso/czechiso}
