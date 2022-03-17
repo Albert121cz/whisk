@@ -14,7 +14,7 @@ bool App::OnInit()
     if (!frame->openGLInitialized())
         return false;    
 
-    frame->Show(true);
+    frame->Show();
     return true;
 }
 
@@ -152,7 +152,7 @@ SidePanel::SidePanel(MainFrame* parent,
 {
     wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
-    ObjectPanel* objects = new ObjectPanel(this, parent, manager);
+    ObjectList* objects = new ObjectList(this, parent, manager);
     sizer->Add(objects, 1, wxEXPAND);
 
     ObjectSettings* settings = new ObjectSettings(this, objects->getListbox(),
@@ -173,13 +173,13 @@ SidePanel::~SidePanel()
 }
 
 
-wxBEGIN_EVENT_TABLE(ObjectPanel, wxPanel)
-    EVT_CHECKLISTBOX(wxID_ANY, ObjectPanel::onCheckBox)
+wxBEGIN_EVENT_TABLE(ObjectList, wxPanel)
+    EVT_CHECKLISTBOX(wxID_ANY, ObjectList::onCheckBox)
 wxEND_EVENT_TABLE()
 
 
 // https://zetcode.com/gui/wxwidgets/widgetsII/
-ObjectPanel::ObjectPanel(SidePanel* parent, MainFrame* main, 
+ObjectList::ObjectList(SidePanel* parent, MainFrame* main, 
     std::shared_ptr<GraphicsManager> manager)
     : wxPanel(parent, wxID_ANY), graphicsManager(manager)
 {
@@ -195,7 +195,7 @@ ObjectPanel::ObjectPanel(SidePanel* parent, MainFrame* main,
 }
 
 
-wxCheckListBox* ObjectPanel::getListbox()
+wxCheckListBox* ObjectList::getListbox()
 {
     return listbox;
 }
@@ -264,7 +264,7 @@ void SidePanelRefreshTimer::Notify()
 }
 
 
-void ObjectPanel::onCheckBox(wxCommandEvent& event)
+void ObjectList::onCheckBox(wxCommandEvent& event)
 {
     int itemIdx = event.GetInt();
     graphicsManager->showOrHideObject(itemIdx);
@@ -442,7 +442,6 @@ wxBEGIN_EVENT_TABLE(RenameFrameButtonPanel, wxPanel)
     EVT_BUTTON(wxID_CANCEL, RenameFrameButtonPanel::onCancel)
 wxEND_EVENT_TABLE()
 
-
 RenameFrameButtonPanel::RenameFrameButtonPanel(RenameFrame* parent)
     : wxPanel(parent), parentFrame(parent)
 {
@@ -476,14 +475,12 @@ TextureFrame::TextureFrame(MainFrame* parent,
     : wxFrame(parent, wxID_ANY, "Textures", wxDefaultPosition, wxDefaultSize,
     wxCAPTION | wxFRAME_FLOAT_ON_PARENT), mainFrame(parent)
 {
-    texManager = manager->getTexManagerPtr();
-
     wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
     listBox = new wxListBox(this, wxID_ANY);
     sizer->Add(listBox, 1, wxEXPAND | wxALL, 2);
 
-    std::vector<std::string> names = texManager->getAllTextureNames();
+    std::vector<std::string> names = manager->getAllTextureNames();
     wxString name;
 
     for (size_t i = 0; i < names.size(); i++)
@@ -529,8 +526,6 @@ TextureFrameButtonPanel::TextureFrameButtonPanel(TextureFrame* parent,
     : wxPanel(parent), parentFrame(parent), mainFrame(main),
     graphicsManager(manager), targetListBox(target), objIdx(idx)
 {
-    texManager = graphicsManager->getTexManagerPtr();
-
     wxGridSizer* sizer = new wxGridSizer(2, 12, 6);
 
     wxButton* newButton = new wxButton(this, wxID_NEW, "New");
@@ -580,7 +575,7 @@ void TextureFrameButtonPanel::onNew(wxCommandEvent&)
     std::regex_search(path, fileName, fileNameRegex);
 
     wxString name(fileName[0]);
-    texManager->addTexture(image.GetData(),
+    graphicsManager->addTexture(image.GetData(),
         image.GetWidth(), image.GetHeight(), name.ToStdString());
 
     targetListBox->InsertItems(1, &name, targetListBox->GetCount());
@@ -594,7 +589,7 @@ void TextureFrameButtonPanel::onDelete(wxCommandEvent&)
     if (idx == wxNOT_FOUND)
         return;
     
-    texManager->deleteTexture(idx);
+    graphicsManager->deleteTexture(idx);
     targetListBox->Delete(idx);
 }
 
@@ -606,7 +601,7 @@ void TextureFrameButtonPanel::onOk(wxCommandEvent&)
     if (idx == wxNOT_FOUND)
         return;
     
-    graphicsManager->setObjectTex(objIdx, texManager->getTexPtr(idx));
+    graphicsManager->setObjectTex(objIdx, graphicsManager->getTexPtr(idx));
     parentFrame->Close();
 }
 
@@ -870,7 +865,6 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
             {GLEW_KHR_debug, "KHR_debug"},
         #endif /* DEBUG */
         {GLEW_ARB_direct_state_access, "ARB_direct_state_access"},
-        {GLEW_ARB_bindless_texture, "ARB_bindless_texture"},
         {WGLEW_EXT_swap_control, "EXT_swap_control"},
     };
 
@@ -984,7 +978,7 @@ void Canvas::onRender(wxCommandEvent&)
     parentFrame->SetStatusText(wxString::Format(wxT("%.1f FPS"), FPS));
 
     // give control back to the app to handle all UI elements and events
-    wxGetApp().Yield();
+    wxYield();
 
     if (done)
         return;
@@ -1012,7 +1006,6 @@ void Canvas::onPaint(wxPaintEvent&)
 
 void Canvas::onSize(wxSizeEvent&)
 {
-
     GetClientSize(&viewportDims.first, &viewportDims.second);
     glViewport(0, 0, viewportDims.first, viewportDims.second);
 }

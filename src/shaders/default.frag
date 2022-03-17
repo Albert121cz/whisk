@@ -9,7 +9,7 @@ in vec3 vertNormal;
 in vec3 vertPos;
 
 uniform int useTex;
-uniform sampler2D texHandle;
+uniform sampler2D tex;
 uniform vec3 lightColor;
 uniform vec3 lightPos;
 
@@ -32,7 +32,7 @@ void main()
     if (useTex == 1)
     {
         vec4 lightVec = vec4((ambientLight + diffuseLight), 1.0f);
-        finalColor = lightVec * texture(texHandle, vertTexCoord);
+        finalColor = lightVec * texture(tex, vertTexCoord);
         return;
     }
 

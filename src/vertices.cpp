@@ -140,45 +140,40 @@ Texture::Texture(GraphicsManager* parent, const unsigned char* imageData,
     int imageWidth, int imageHeight, std::string name)
     : textureName(name), parentManager(parent)
 {
-    texType = GL_TEXTURE_2D;
-
     glGenTextures(1, &ID);
 
-    glBindTexture(texType, ID);
+    glBindTexture(GL_TEXTURE_2D, ID);
     
     // setting up down/upscaling
-    glTexParameteri(texType, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(texType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+        GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+        GL_LINEAR);
 
     // setting up how the texture wraps around the object
-    glTexParameteri(texType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(texType, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // TODO: load and handle RGBA
-    glTexImage2D(texType, 0, GL_RGB, imageWidth, imageHeight, 0, GL_RGB,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imageWidth, imageHeight, 0, GL_RGB,
         GL_UNSIGNED_BYTE, imageData);
 
     // OpenGL generates the remaining mipmap levels from the image
-    glGenerateMipmap(texType);
+    glGenerateMipmap(GL_TEXTURE_2D);
 
-    glBindTexture(texType, 0);
-
-    handle = glGetTextureHandleARB(ID);
-    glMakeTextureHandleResidentARB(handle);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
-
 
 
 Texture::~Texture()
 {
-    glMakeTextureHandleNonResidentARB(handle);
     glDeleteTextures(1, &ID);
 }
 
 
-GLuint64 Texture::getHandle()
+void Texture::bind()
 {
-    return handle;
+    glBindTexture(GL_TEXTURE_2D, ID);
 }
 
 
@@ -260,7 +255,6 @@ Object::Object(const Object& old)
 {
     show = old.show;
     hasTex = old.hasTex;
-    texHandle = old.texHandle;
     objectName = old.objectName + " copy";
     position = old.position;
     rotation = old.rotation;
@@ -313,16 +307,13 @@ void Object::draw()
 {
     int useTexUniform = glGetUniformLocation(parentManager->getShadersID(),
         "useTex");
-    int samplerUniform = glGetUniformLocation(parentManager->getShadersID(),
-        "texHandle");
 
     GLint useTex;
 
     if (hasTex)
     {
         useTex = 1;
-        GLuint64 handle = tex->getHandle();
-        glUniformHandleui64ARB(samplerUniform, handle);
+        tex->bind();
     }
     else 
         useTex = 0;
@@ -361,46 +352,7 @@ void Object::draw()
     vertexArray->bind();
     glDrawArrays(GL_TRIANGLES, 0, combinedLen / 11 - lineCount / 3);
     glDrawArrays(GL_LINES, combinedLen / 11 - lineCount / 3, combinedLen / 11);
-}
-
-
-TextureManager::TextureManager(GraphicsManager* manager)
-    : graphicsManager(manager)
-{    
-}
-
-
-void TextureManager::addTexture(const unsigned char* data, int width,
-    int height, std::string name)
-{
-    textures.push_back(
-        std::make_shared<Texture>(graphicsManager, data, width, height, name));
-}
-
-
-void TextureManager::deleteTexture(int idx)
-{
-    textures.erase(textures.begin() + idx);
-}
-
-
-std::shared_ptr<Texture> TextureManager::getTexPtr(int idx)
-{
-    if (static_cast<size_t>(idx) > textures.size())
-        return nullptr;
-    
-    return textures[idx];
-}
-
-
-std::vector<std::string> TextureManager::getAllTextureNames()
-{
-    std::vector<std::string> names;
-
-    for (std::shared_ptr<Texture> texture : textures)
-        names.push_back(texture->textureName);
-    
-    return names;
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 

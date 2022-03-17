@@ -67,13 +67,11 @@ public:
         int imageWidth, int imageHeight, std::string name);
     ~Texture();
 
-    GLuint64 getHandle();
+    void bind();
 
 private:
     GraphicsManager* parentManager;
     GLuint ID;
-    GLuint64 handle;
-    GLenum texType;
 };
 
 
@@ -110,7 +108,6 @@ private:
     int combinedLen;
     GLfloat* combinedData;
 
-    GLuint64 texHandle;
     GLfloat color[3];
     glm::mat4 model;
 
@@ -120,23 +117,6 @@ private:
         LINE = 1,
         POINT = 2
     };
-};
-
-
-class TextureManager
-{
-public:
-    TextureManager(GraphicsManager* manager);
-
-    void addTexture(const unsigned char* data, int width, int height,
-        std::string name);
-    void deleteTexture(int idx);
-    std::shared_ptr<Texture> getTexPtr(int idx);
-    std::vector<std::string> getAllTextureNames();
-
-private:
-    GraphicsManager* graphicsManager;
-    std::vector<std::shared_ptr<Texture>> textures;
 };
 
 

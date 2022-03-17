@@ -14,8 +14,6 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
         glDebugMessageCallback(oglDebug::GLDebugMessageCallback, NULL);
     #endif /* DEBUG */
 
-    // depth tests chekc if the fragment (which it is currently rendering)
-    // should be on top
     glEnable(GL_DEPTH_TEST);
 
     // v-sync
@@ -30,8 +28,6 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
     shaders->addShader("default.frag");
     shaders->linkProgram();
 
-    textures = new TextureManager(this);
-
     camera = new Camera();
 }
 
@@ -39,14 +35,7 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
 GraphicsManager::~GraphicsManager()
 {
     delete shaders;
-    delete textures;
     delete camera;
-}
-
-
-TextureManager* GraphicsManager::getTexManagerPtr() const
-{
-    return textures;
 }
 
 
@@ -95,13 +84,6 @@ void GraphicsManager::setUniformMatrix(glm::mat4 mat, const char* name)
 {
     int location = glGetUniformLocation(shaders->getID(), name);
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat));
-}
-
-
-void GraphicsManager::setUniformVector(glm::vec3 vec, const char* name)
-{
-    int location = glGetUniformLocation(shaders->getID(), name);
-    glUniform3f(location, vec.x, vec.y, vec.z);
 }
 
 
@@ -453,6 +435,47 @@ std::vector<std::string> GraphicsManager::getAllObjectNames()
 }
 
 
+void GraphicsManager::addTexture(const unsigned char* data, int width,
+    int height, std::string name)
+{
+    textures.push_back(
+        std::make_shared<Texture>(this, data, width, height, name));
+}
+
+
+void GraphicsManager::deleteTexture(int idx)
+{
+    textures.erase(textures.begin() + idx);
+}
+
+
+std::shared_ptr<Texture> GraphicsManager::getTexPtr(int idx)
+{
+    if (static_cast<size_t>(idx) > textures.size())
+        return nullptr;
+    
+    return textures[idx];
+}
+
+
+std::vector<std::string> GraphicsManager::getAllTextureNames()
+{
+    std::vector<std::string> names;
+
+    for (std::shared_ptr<Texture> texture : textures)
+        names.push_back(texture->textureName);
+    
+    return names;
+}
+
+
+void GraphicsManager::setUniformVector(glm::vec3 vec, const char* name)
+{
+    int location = glGetUniformLocation(shaders->getID(), name);
+    glUniform3f(location, vec.x, vec.y, vec.z);
+}
+
+
 std::vector<std::vector<std::string>> GraphicsManager::parseFile(
     std::string name)
 {
@@ -701,6 +724,8 @@ void GraphicsManager::triangulate(
             if (!outside)
             {
                 it++;
+
+                // continue in the outside loop
                 goto nextIt;
             }
         }

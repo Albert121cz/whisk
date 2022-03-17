@@ -32,7 +32,7 @@
 
 
 class MainFrame;
-class ObjectPanel;
+class ObjectList;
 class ObjectButtonPanel;
 class RenameFrame;
 class ObjectSettings;
@@ -48,7 +48,7 @@ public:
 
 private:
     MainFrame* frame;
-    ObjectPanel* objectFrame;
+    ObjectList* objectFrame;
 };
 
 
@@ -89,10 +89,10 @@ private:
 };
 
 
-class ObjectPanel : public wxPanel
+class ObjectList : public wxPanel
 {
 public:
-    ObjectPanel(SidePanel* parent, MainFrame* main,
+    ObjectList(SidePanel* parent, MainFrame* main,
         std::shared_ptr<GraphicsManager> manager);
 
     wxCheckListBox* getListbox();
@@ -199,7 +199,6 @@ public:
 
 private:
     MainFrame* mainFrame;
-    TextureManager* texManager;
     wxListBox* listBox;
 };
 
@@ -214,7 +213,6 @@ private:
     TextureFrame* parentFrame;
     MainFrame* mainFrame;
     std::shared_ptr<GraphicsManager> graphicsManager;
-    TextureManager* texManager;
     wxListBox* targetListBox;
     int objIdx;
 

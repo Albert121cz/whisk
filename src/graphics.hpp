@@ -24,7 +24,6 @@
 class MainFrame;
 class Canvas;
 class ShaderManager;
-class TextureManager;
 class VertexBuffer;
 class ElementBuffer;
 class VertexArray;
@@ -40,7 +39,6 @@ public:
     GraphicsManager(Canvas* parent);
     ~GraphicsManager();
 
-    TextureManager* getTexManagerPtr() const;
     GLuint getShadersID();
     void render();
     void sendToLog(std::string message);
@@ -64,13 +62,18 @@ public:
     glm::vec3* getObjectSize(int idx);
     int* getObjectMode(int idx);
     std::vector<std::string> getAllObjectNames();
+    void addTexture(const unsigned char* data, int width, int height,
+        std::string name);
+    void deleteTexture(int idx);
+    std::shared_ptr<Texture> getTexPtr(int idx);
+    std::vector<std::string> getAllTextureNames();
 
 private:
     Canvas* parentCanvas;
     ShaderManager* shaders;
-    TextureManager* textures;
     Camera* camera;
     std::vector<std::unique_ptr<Object>> objects;
+    std::vector<std::shared_ptr<Texture>> textures;
 
     glm::vec3 lightColor;
     glm::vec3 cameraToLight;
