@@ -1,0 +1,52 @@
+\DTMsetstyle{czech}
+
+\hyphenpenalty=10000
+\hbadness=10000
+\setlength{\emergencystretch}{30pt}
+
+\setlength{\parindent}{0em}
+
+\setlist{nosep}
+
+\newlength{\bodyparskip}
+\setlength{\bodyparskip}{0.7em}
+\newlength{\tocparskip}
+\setlength{\tocparskip}{0.2em}
+\setlength{\parskip}{\bodyparskip}
+
+\setcounter{tocdepth}{4}
+\setcounter{secnumdepth}{4}
+
+\newcommand{\lastrevdate}[1]{datum poslední revize: \mbox{#1}}
+\newcommand{\citedate}[1]{\mbox{[cit. #1]}}
+
+\newcommand{\uvoz}[1]{\quotedblbase #1\textquotedblleft}
+
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}\\}
+
+\crefformat{footnote}{#2\footnotemark[#1]#3}
+
+\addto{\captionsczech}{
+    \renewcommand{\bibname}{Zdroje}
+}
+
+\makeatletter
+  \def\@makechapterhead#1{
+    {
+      \parindent \z@ \raggedright \normalfont
+      \huge\bfseries\thechapter
+      \space
+      \Huge \bfseries #1\par\nobreak
+      \vskip 20\p@
+    }
+  }
+  
+  \def\@makeschapterhead#1{
+    {
+      \parindent \z@ \raggedright \normalfont
+      \Huge \bfseries #1\par\nobreak
+      \vskip 20\p@
+    }
+  }
+\makeatother

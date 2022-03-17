@@ -4,36 +4,16 @@
 \usepackage{datetime2}
 \usepackage{hyperref}
 \usepackage{xevlna}
-\usepackage{blindtext}
 \usepackage[chapter, numbib, nottoc]{tocbibind}
 \usepackage{beuron}
+\usepackage{enumitem}
+\usepackage{cleveref}
 
-\DTMsetstyle{czech}
+\input{style.tex}
 
-\hyphenpenalty=10000
-\hbadness=10000
-\setlength{\emergencystretch}{30pt}
-
-\setlength{\parindent}{0em}
-
-\newlength{\bodyparskip}
-\setlength{\bodyparskip}{0.7em}
-\newlength{\tocparskip}
-\setlength{\tocparskip}{0.2em}
-\setlength{\parskip}{\bodyparskip}
-
-\setcounter{tocdepth}{3}
-\setcounter{secnumdepth}{3}
-
-\newcommand{\lastrevdate}[1]{datum poslední revize: \mbox{#1}}
-\newcommand{\citedate}[1]{\mbox{[cit. #1]}}
-
-\addto{\captionsczech}{
-    \renewcommand{\bibname}{Zdroje}
-}
 
 \begin{document}
-%
+\hfuzz=1pt
 \title{
     {\fontsize{65}{75}\selectfont \textbeuron{Whisk}} \\ [0.7cm]
     {\LARGE Dokumentace maturitní práce}
@@ -42,7 +22,7 @@
 \date{Školní rok 2021/2022}
 \maketitle
 \stepcounter{page}
-%
+
 \chapter*{Zadání maturitní práce}
 \subsection*{Grafická aplikace pro zobrazení tvarů v prostoru}
 Cílem práce je vytvořit v programovacím jazyce C++ s použitím knihoven wxWidgets a OpenGL grafickou aplikaci pro zobrazování 3D objektů a scén. Základní funkcí bude načítání souborů ve formátu Wavefront object (*.obj) a jejich zobrazování v 3D prostoru. Součástí bude uživatelem ovladatelná kamera. Nadstavbovou funkcí může být přidávání nových tvarů a jejich úprava – zvětšování, zmenšování, posouvání, otáčení.
@@ -63,38 +43,154 @@ Prohlašuji, že jsem na práci pracoval samostatně pouze za pomoci použitých
 \setlength{\parskip}{\tocparskip}
 \tableofcontents
 \setlength{\parskip}{\bodyparskip}
-%
+
 \chapter{Teoretická část}
-\blindtext[1]
-%
+
 \chapter{Praktická část}
 \section{Cíle práce}
-Cílem práce bylo naprogramovat aplikaci, jež by umožňovala uživateli nahrát soubory typu Wavefront object (formát vyvinutý americkou společností Wavefront pro jejich program Advanced Visualizer\cite{wiki:obj}; později byl tento formát přijat ostatními společnostmi a je považován za standard). Na toto nahrání jsem se rozhodl nepoužít žádnou knihovnu kromě standardní knihovny C++ a algoritmy na parsování souboru či triangulaci si napsat sám (nebo v případě triangulace sám napsat implementaci již vymyšleného algoritmu). Kromě nahrání souboru by uživatel měl mít možnost si objekty prohlížet pomocí jím ovládané kamery a aranžovat je do scén -- tedy s nimi posouvat, otáčet je, měnit velikost.
+Cílem práce bylo naprogramovat aplikaci, jež by umožňovala uživateli nahrát soubory typu Wavefront object (formát vyvinutý americkou společností Wavefront pro jejich program Advanced Visualizer\cite{wiki:obj}; později byl tento formát přijat ostatními společnostmi a je považován za standard). Na toto nahrání jsem se rozhodl nepoužít žádnou knihovnu kromě standardní knihovny C++ a algoritmy na parsování souboru či triangulaci si napsat sám (nebo v případě triangulace sám napsat implementaci již vymyšleného algoritmu). Kromě nahrání souboru by uživatel měl mít možnost si objekty prohlížet jím ovládanou kamerou a aranžovat je do scén -- tedy s nimi posouvat, otáčet je, měnit velikost.
 
-Protože vytvoření 3D editoru se všemi funkcemi je projekt úplně jiného měřítka než maturitní práce, a na trhu je mnoho možností včetně projektů otevřeného softwaru (jako je např. Blender), cílem bylo hlavně si vyzkoušet práci s knihovnami, které by byly pravděpodobně použity při vývoji takové aplikace v realitě. Chtěl jsem použít pro prostorové zobrazování knihovnu, která se používá v reálném světě, a také se vyhnout enginům, které právě zprostředkují vývojářům snažší komunikaci s těmito nízkoúrovňovými knihovnami. Kromě prostorového zobrazení cílem bylo vytvořit uživatelské prostředí s nativním ovládáním operačního systému, protože tlačítka nakreslená pomocí API operačního systému jsou více flexibilní a vypadají lépe než ta, jež bych kreslil sám. Například systémová tlačítka už mají animaci a také lze mezi nimi přeskakovat pomocí šipek..
-%
+Protože vytvoření 3D editoru se všemi funkcemi je projekt úplně jiného měřítka než maturitní práce, navíc na trhu je mnoho možností včetně projektů otevřeného softwaru (jako je např. Blender), cílem bylo hlavně si vyzkoušet práci s knihovnami, které by byly pravděpodobně použity při vývoji takové aplikace v realitě. Chtěl jsem použít pro prostorové zobrazování knihovnu, která se používá v reálném světě, a také se vyhnout enginům, které právě zprostředkují vývojářům snažší komunikaci s těmito nízkoúrovňovými knihovnami. Kromě prostorového zobrazení cílem bylo vytvořit uživatelské prostředí s nativním ovládáním operačního systému, protože tlačítka nakreslená pomocí API operačního systému jsou více flexibilní a vypadají lépe než ta, jež bych kreslil sám. Například systémová tlačítka už mají animaci a také lze mezi nimi přeskakovat pomocí šipek.
+
+\section{Způsoby řešení a použité postupy}
+Program je rozdělen do více souborů a tříd, aby se v něm dalo lépe orientovat. Konkrétně se jedná o pět souborů hlaviček s definicemi tříd, pět souborů s implementacemi těchto tříd a dva soubory shaderů pro knihovnu OpenGL. Základ programu leží v souborech \emph{main.hpp} a \emph{main.cpp}.
+
+Všechny třídy v těchto souborech jsou zděděny z tříd knihovny wxWidgets, protože zprostředkují grafické prostředí. Okna jsou zděděna ze třídy \texttt{wxFrame}. Ta samotná většinou nestačí k uspokojivému rozložení ovládacích prvků, proto se do oken vkládají tzv. panely (ze třídy \texttt{wxPanel}). Rozložení panelů nebo samotných ovládacích prvků je určeno kontejnery ze třídy \texttt{wxSizer} -- mají za úkol měnit velikost a polohu obsažených prvků podle místa, jejž mají k dispozici. Tyto kontejnery umožňují určit, kolik místa mohou tlačítka, textová pole nebo panely v nich zabírat.
+
+Protože aplikace vytvořená pomocí knihovny wxWidgets je řízená událostmi (eventy), musíme u tříd, kde o to máme zájem, nastavit tabulku zachytávání událostí. V ní stanovíme pomocí maker, jaká funkce se má při dané události spustit. Tato tabulka musí být v hlavičce nejprve deklarována uvnitř každé třídy, kde chceme události zachytávat, a potom zvlášť zadefinována (zde v kódu vždy nad příslušnou třídou).
+
+WxWidgets v sobě obsahuje velké množství tříd, které mají přímý ekvivalent ve standardní knihovně. Jako příklad můžeme uvést textové řetězce (string), vzájemné vyloučení (mutex), semafory, vlákna (thread), vektory (kontejnery vector) -- je jich relativně velké množství. Třídy z wxWidgets a jejich metody používají ve svých argumentech nebo návratových hodnotách právě tyto jiné verze už standardně implementovaných kontejnerů či tříd. Ze standardních datových typů (nebo zpět na ně) je nutné je převést (tento převod není vždy implicitní). V projektu jsem se snažil oddělit části kódu s knihovnou wxWidgets od ostatního kódu -- nestandardní datové typy a třídy se snažím nepoužívat mimo třídy zděděné z wxWidgets a soubory \emph{main.hpp} a \emph{main.cpp}.
+
+\subsection{Třída \texttt{App}}
+Tato třída se dá považovat za úplný základ aplikace, je zděděná z třídy \texttt{wxApp} a kromě předefinování virtuální funkce \texttt{OnInit} se od své rodičovské třídy nijak neliší. Hlavní smyčka programu je součástí této třídy a většinou ji při vývoji aplikace s knihovnou wxWidgets není nutné předefinovat, protože jednotlivé funkce programu jsou spouštěny pomocí událostí -- implementace nových částí programu až na výjimečné případy změnu hlavní smyčky nevyžaduje.
+
+Funkce \texttt{OnInit} připraví příslušné části wxWidgets na načítání obrázků textur a spustí hlavní okno aplikace. Pokud se toto okno úspěšně spustí včetně plátna (canvas) na vykreslování scény (to se ověří funkcí \texttt{openGLInitialized} patřící třídě hlavního okna), vrátí funkce hodnotu \emph{true} (pravda) a hlavní smyčka se spustí. V opačném případě je zobrazena uživateli chybová hláška a aplikace posléze uzavřena.
+
+\subsection{Hlavní okno -- třída \texttt{MainFrame}}
+Nejdůležitější viditelnou částí programu (se kterou také uživatel bude nejčastěji interagovat) je hlavní okno. Z něj jsou později otevírána všechna ostatní okna a zároveň je jeho součástí většina ovládacích prvků.
+
+V konstruktoru třídy hlavního okna je vytvořena nabídka v levém horním rohu a stavový řádek, jenž bude později použit pro zobrazení počtu vykreslených snímků za vteřinu. Uvnitř konstruktoru je také ověřeno, že OpenGL půjde spustit. Pokud ano, je vytvořeno plátno pro OpenGL a postranní panel s ovládáním objektů.
+
+\subsection{Postranní panel -- třída \texttt{SidePanel}}
+Třída postranního panelu má za úkol držet v sobě třídy umožňující uživateli interakci s objekty. Těmi třídami jsou \texttt{ObjectList}, \texttt{ObjectSettings} a \texttt{SidePanelRefreshTimer}. První dvě z jmenovaných tříd jsou panely a zbývající je třída časovače (zděděná z \texttt{wxTimer}).
+
+Všechna nastavení v postranním panelu mění parametry objektů podobným způsobem. Při stisknutí tlačítka nebo úpravě nastavení je provedena kontrola, jestliže je zvolen nějaký objekt -- pokud ne, tlačítka nedělají nic (ani se nezobrazí menu možnosti změny textury nebo jména) a číselná pole s roletou se vrací do své původní (nulové) polohy. Pokud cílový objekt zvolen je, pak je změna přeposlána do třídy \texttt{GraphicsManager}, která drží všechny objekty.
+
+\subsubsection{Třída \texttt{ObjectSettings}}
+Tato třída má za úkol spravovat číselná pole se souřadnicemi objektů, jejich rotací, velikostí a roletu s výběrem vykreslovacího režimu stěn. \texttt{ObjectList} v sobě drží tlačítka pro manipulaci s objekty a seznam třídy \texttt{wxCheckListBox}, ve kterém si uživatel může vybírat objekt, jejž chce upravit, nebo s ním manipulovat. Při interakci s tlačítky nebo poli v postranním panelu si funkce zachycující událost (stisknutí nebo změny hodnoty uvnitř pole) z listu zjistí, který objekt chce uživatel upravovat. Další úlohou seznamu je také ukazování a schovávání objektů na scéně.
+
+\subsubsection{Třída \texttt{SidePanelRefreshTimer}}
+Cílem časovače je držet uživatelské rozhraní aktuální se skutečným stavem objektů. Její virtuální metoda \texttt{Notify} se periodicky spouští -- v každém cyklu je zkontrolován seznam, zda se v něm něco nezměnilo (v případě změny je seznam upraven), a také je aktivována událost třídy \texttt{ObjectSettings}, aby se analogicky zkontrolovala i číselná pole a roleta.
+
+\subsection{Plátno -- třída \texttt{Canvas}}
+\subsubsection{Co je plátno?}
+Abychom mohli vidět, co OpenGL vykreslí, je nutné mít třídu zděděnou z \texttt{wxGLCanvas}, která bude s OpenGL komunikovat -- plátno je místo, do kterého se mohou vkládat tzv. kontexty (v knihovně wxWidgets jsou kontexty implementovány třídou \texttt{wxGLContext}). Kontexty zařizují celkovou komunikaci s OpenGL -- nejen obraz, ale i všechna volání. Kontext drží v každý moment dva snímky v tzv. bufferech -- jeden je ukazován uživateli a na druhém pracuje OpenGL. Když je snímek na pozadí kompletně vykreslen, můžou být buffery prohozeny -- uživatel nyní vidí nový snímek a OpenGL mezitím vykresluje nový.
+
+Třída \texttt{Canvas} má několik rolí -- nejdůležitější je pravidelné zobrazování vykreslených snímků uživateli (s jejich zobrazováním ještě počítá průměrnou obnovovací frekvenci, kterou zapisuje do stavové lišty v levém spodním rohu okna). Další rolí je monitorování akcí uživatele (pohyb myší, stisknutí tlačítek myši) a změna velikosti viewportu (průzoru, do něhož OpenGL renderuje) podle aktuální velikosti okna.
+
+V konstruktoru této třídy se vytvoří nový kontext a je zkontrolován, zda běží správně. Pokud se kontext řádně vytvořil, inicializuje se knihovna GLEW -- načte rozšíření (extension) OpenGL, jež ovladač grafické karty podporuje. GLEW také nastaví potřebné konstanty a ukazatele (pointer) na funkce OpenGL. Než může program začít vykreslovat, je ještě potřeba zkontrolovat dostupnost všech rozšíření, s nimiž budeme později pracovat -- k tomu slouží funkce \texttt{extCheck}, se kterou jsou všechna potřebná rozšíření otestována. Pak už zbývá jen vytvořit třídu \texttt{GraphicsManager} a spustit vykreslovací smyčku.
+
+\subsubsection{Vykreslovací smyčka}
+Během řešení problému vykreslovací smyčky se ukázalo, že wxWidgets možná není nejlepší knihovna pro tento úkol. To je z důvodu, že nejlepší stránka této knihovny není v rychlosti hlavní smyčky a optimalizaci, ale v jednoduchosti používání grafických prvků. WxWidgets má velký výběr možností pro tento účel, ale téměř žádný pro snadné vytvoření vykreslovací smyčky. Návod k wxWidgets radí, aby byl použit časovač (stejně, jako je vyřešen časovač na aktualizování seznamu objektů a nastavení)\cite{wx:render}. Tento přístup má velkou nevýhodu -- časovače wxWidgets používají tzv. low precision (málo přesný) časovač operačního systému. To by nebyl problém na jiné platformě, než je operační systém Windows. Ale právě tady je časovač opravdu relativně nepřesný -- skáče přibližně po 15--16 ms\cite{ms:timer}, a hlavně nedokáže se spouštět okamžitě -- s nulovou dobou čekání (to by bylo ideální). S takovou minimální dobou dosáhne aplikace obnovovací frekvence scény přibližně 60 Hz. To by u většiny počítačů nepředstavovalo žádné omezení, protože monitory s obnovovací frekvencí 60 Hz patří pořád k nejběžnějším.
+
+Já jsem ale chtěl, aby aplikace nebyla v tomto ohledu limitována, protože monitory s vyšší obnovovací frekvencí jsou čím dál častější a nová aplikace by na to měla být připravena, tak jsem přistoupil k řešení, od něhož návod zrazuje. Po připravení okna a plátna s kontextem je spuštěna vykreslovací událost, která vykresluje, dokola spouští sama sebe a volá metodu \texttt{Yield} třídy \texttt{App}. Volání této metody je nezbytné, protože umožňuje aplikaci zachycovat ostatní události -- bez ní by aplikace zamrzla. V době kdy se uživatel rozhodne aplikaci ukončit, se událost přestane volat, a program se normálně zavře. Tímto způsobem aplikace vykresluje nejvyšší rychlostí, jakou je jí to dovoleno. To není také úplně nejlepší stav -- je řešen v třídě \texttt{GraphicsManager} pomocí tzv. vertikální synchronizace, která upravuje obnovovací frekvenci programu podle obnovovací frekvence monitoru. Tento přístup se i přes varování v návodu ukázal jako plně funkční s výhodami oproti doporučenému.
+
+\subsection{Třída \texttt{GraphicsManager}}
+Tato třída má za úkol vykreslovat scénu s knihovnou OpenGL a provádět v ní všechny změny, o které uživatel zažádá přes ovládací prvky grafického rozhraní. Drží v sobě všechny objekty i textury a s použitím metod této třídy jsou upravovány jejich parametry.
+
+\subsubsection{Konstruktor}
+Při vytvoření třídy \texttt{GraphicsManager} je zapnuta vertikální synchronizace (zkráceně v-sync), jež má za cíl zpomalení výměny vykreslených snímků a vykreslování nových tak, aby frekvence vykreslování nepřesahovala frekvenci monitoru. Pokud to grafický ovladač (a monitor) dovoluje, zapne se v-sync v tzv. adaptivním režimu pro zmenšené trhání obrazu -- pokud vykreslený snímek netrefí frekvenci monitoru a je připraven moc pozdě, vykreslí se ihned místo čekání na další snímek monitoru.
+
+Dále je v OpenGL aktivován tzv. test hloubky (depth test), který zařídí, že při vykreslování zůstane na vrchu snímku vždy jen to, co se v prostoru nachází blíže ke kameře. Bez tohoto testu se může stát, že zadní stěna objektu, který aplikace zobrazuje, se vykreslí přes přední -- vykreslený obraz bude podobný obrazům tzv. nemožných objektů.(OBRÁZEK OPTICKÉHO KLAMU I PROGRAMU BEZ DEPTH TESTU)
+
+Než může vykreslování začít, je potřeba vytvořit třídu spravující polohu a směr kamery (třída \texttt{Camera}) a načíst shadery\footnote{Účel shaderů je blíže vysvětlen v kapitole o třídě \texttt{ShaderManager}.} pomocí třídy \texttt{ShaderManager}. Ty jsou načteny ze souborů ve složce s aplikací -- \emph{default.vert} je soubor s vertex shaderem a \emph{default.frag} je soubor s fragment shaderem.
+
+Pokud je program postaven v režimu ladění (debug), je v konstruktoru také zapnuto vypisování chyb a informací do terminálu z OpenGL. Pro výpis je použita funkce \texttt{GLDebugMessageCallback}, kterou jsem převzal a upravil. Sám jsem ji nevytvořil, protože jsem nevěděl, co přesně jednotlivé hodnoty znamenají. Úprava byla potřeba, protože byla tato funkce napsaná původně pro jiný kompilátor (MSVC), než používám, a protože jsem chtěl, aby zobrazovala všechny zprávy včetně informačních.
+
+\subsubsection{Správa objektů a textur}
+Objekty i textury jsou zvláštní třídy (třída \texttt{Object} a \texttt{Texture}), které jsou drženy v kontejnerech typu \texttt{vector}. Přesněji řečeno v těchto kontejnerech jsou drženy chytré ukazatele (smart pointer) k těmto třídám. Chytré ukazatele mají výhodu oproti přímému ukládání objektů v tom, že při zvětšování \texttt{vectoru} není potřeba tolik nového místa v heapu u sebe a kopírování všech již zapsaných dat bude mnohonásobně rychlejší. Zároveň mají oproti standardním ukazatelům výhodu v tom, že pokud se ocitnou mimo scope programu, jsou automaticky smazány, a není tedy třeba je z heapu odstraňovat explicitně. Na objekty je ukazováno pomocí \texttt{unique\_ptr}, který může být vždy držen v programu jen na jednom místě -- v této aplikaci je vždy držen pouze třídou \texttt{GraphicsManager} a všechny požadavky na data (ať jejich čtení nebo zápis) jsou vyřizovány přes její metody. K texturám je přistupováno s použitím ukazatele \texttt{shared\_ptr}, jenž umožňuje jeho držení na více místech zároveň (ukazatel si sám počítá, v kolika místech je stále používán -- pokud už není používán nikde, smaže data, na která ukazuje). K texturám jsem zvolil raději tento typ ukazatele, protože pokud se uživatel ze seznamu rozhodne odstranit texturu, která je právě některým objektem používána, objekt o ni nepřijde -- je odstraněna až v moment, kdy není ani v seznamu a ani ji nepoužívá žádný objekt. V uživatelském rozhraní jsou objekty či textury v seznamech seřazeny stejně jako v kontejnerech \texttt{vector} a pokud uživatel některou položku ze seznamu vybere, je tím zjištěn index upravovaného objektu či textury -- s tímto indexem je pak zavolána metoda třídy \texttt{GraphicsManager} pro danou operaci s objektem nebo texturou.
+
+\subsubsection{Načítání nového objektu}
+I když na načítání objektů z různých typů souborů (včetně Wavefront object) existují knihovny, mým záměrem bylo udělat logiku načítání sám. Tato aplikace kvůli tomu není v současném stavu schopná načítat další typy souborů, což by knihovny poměrně jednoduše umožňovaly. Samotné načítání začíná ve funkci \texttt{newObject}, která je volána při stisknutí tlačítka \emph{New} v postranním panelu nebo při zvolení možnosti \emph{Load object...} v menu.
+
+\paragraph{Syntaktická analýza souboru}
+Zvolený soubor je zpracován funkcí \texttt{parseFile} -- ta rozdělí celý soubor do kontejneru \texttt{vector}, v němž jsou další \texttt{vectory} (každý reprezentuje řádek v souboru). Data na každém řádku jsou mezerami rozdělena do \uvoz{bloků} -- blok je samostatný řetězec znaků (\texttt{string}). Toto rozdělení je užitečné z důvodu, že tak půjde dobře dělit řádky podle prvního bloku (který určuje, jaké informace se na řádku nacházejí). Kromě toho toto rozdělení umožňuje snazší převod znakových řetězců s čísly na samotná čísla -- v každém bloku se nachází vždy jen jedno číslo bez jiných znaků, tudíž lze převést celý řetězec bez úprav. V kontejnerech reprezentující řádky jsou uložené jednotlivé bloky textu. Kromě jednoduchého rozdělení souboru je úkolem funkce \texttt{parseFile} přeskakování všech řádků s komentáři a spojování řádků, které končí zpětným lomítkem (\textbackslash). Dále se funkce \texttt{parseFile} umí vypořádat i s prázdnými řádky a vícero mezerami mezi bloky, které do výsledného kontejneru nezapíše.
+
+Po rozdělení souboru jsou jednotlivé řádky čteny a data z nich zpracovávána. Vždy je přečten první blok v každém řádku a podle toho data zpracována. Funkce \texttt{newObject} je rekurzivní, protože v souboru může být i více objektů než jen jeden. Aby se nezaplnila paměť počítače při načítání souboru s větším množstvím objektů, jsou všechna společná data sdílena mezi rekurzivními voláními (v kontejnerech) pomocí chytrých ukazatelů (zde je použit konkrétně \texttt{shared\_ptr}). Mezi společná data\footnote{Pro účel jednotlivých typů dat viz. kapitolu o třídě \texttt{Object}} patří soubor rozdělený do řádků a bloků, souřadnice bodů v prostoru i v obrázku textury a normálové vektory pro výpočet osvětlení objektu. Naopak každé volání \texttt{newObject} si zvlášť drží informace o bodech konkrétního objektu (v prostoru i v textuře, a navíc ještě normály) -- ty jsou uvedeny ve specifickém pořadí pro daný objekt a mohou se i opakovat (jsou vybrány ze společných dat).
+
+Wavefront object je velmi rozšířený soubor a poměrně hodně se liší, co všechno může obsahovat. Tato aplikace je uzpůsobena pro relativně základní verzi, která ale stačila k nahrání všech souborů, jež jsem vyzkoušel.
+
+Aplikace podporuje následující data\footnote{Seznam je členěn podle prvního bloku udávající typ následných dat.} ze souboru:
+\begin{itemize}
+    \item \textbf{v} -- bod v prostoru; následují trojrozměrné souřadnice\footnote{\label{float}Čísla jsou ve formátu s plovoucí řadovou čárkou -- float.}
+    \item \textbf{vt} -- bod v textuře (obrázku); následují dvojrozměrné souřadnice\cref{float}
+    \item \textbf{vn} -- normála v prostoru; následují trojrozměrné souřadnice\cref{float}
+    \item \textbf{f} -- stěna; následují data o stěně\footnote{Stěna může mít jakýkoliv počet vrcholů -- musí ale být alespoň tři.} obsahující indexy\footnote{Indexem je myšleno pořadní číslo v již přečtených bodech. Pořadí začíná číslem 1 a může být i v negativních hodnotách pro počítání pořadí od konce seznamu bodů.} bodů v prostoru -- k nim ještě mohou být přidány indexy bodů v textuře a normály oddělené lomítkem (/)
+    \item \textbf{l} -- čára; následují indexy dvou bodů, které čára spojuje
+    \item \textbf{o} -- jméno objektu; udává jméno objektu a zároveň také, kde začíná nový objekt -- do toho místa pokračuje rekurzivně zavolaná funkce \texttt{newObject}
+\end{itemize}
+
+Pokaždé, když je načten řádek se stěnou, jsou jeho data zpracována pomocí funkce \texttt{parseFace}, která rozpozná, jaká data jsou souborem poskytnuta -- stěna může mít souřadnice textury, normálový vektor nebo \textbf{obojí}. Data poté uspořádá do kontejneru \texttt{vector} -- každý vrchol stěny zvlášť bude uspořádaná trojice (\texttt{tuple}) čísel \footnote{1. číslo udává index v seznamu bodů v prostoru, 2. číslo určuje index v seznamu bodů v textuře a 3. číslo je index v seznamu normálových vektorů.}.
+
+Po dočtení celého \texttt{vectoru} s daty souboru nebo nalezení dalšího objektu (první blok na dalším řádku značí nový objekt) je vytvořena nová instance třídy \texttt{Object} -- je vložena do kontejneru, v němž jsou uloženy všechny objekty ve scéně. Na vytvoření nové instance jsou použita data\footnote{Tvar dat a jejich konkrétní zpracování je vysvětlen v kapitole o třídě \texttt{Object}.} specifická pro dané volání funkce \texttt{newObject}.
+
+\paragraph{Triangulace}
+Kvůli způsobu fungování grafické karty lze vykreslovat stěny jen pomocí trojúhelníků. Soubor typu Wavefront object podporuje i stěny s více vrcholy, a tak je potřeba mnohoúhelníky s více než třemi vrcholy rozdělit na trojúhelníky. K tomu je použita funkce \texttt{triangulate}. Protože je toto problém, se kterým se v grafických aplikacích setkáváme již desítky let, bylo už vymyšleno několik různých algoritmů na jeho řešení\cite{wiki:triangulation}. Ve funkci \texttt{triangulate} je implementovaný algoritmus, který je nazýván \emph{Ear-clipping method}. Jeho principem je, že každý mnohoúhelník má alespoň dvě tzv. ucha\footnote{Za ucho je označována skupina tří po sobě jdoucích různých vrcholů mnohoúhelníku, pokud trojúhelník daný těmito body v sobě neobsahuje žádný jiný vrchol z původního mnohoúhelníku.}, které můžeme postupně odstraňovat (podle toho je také odvozen název tohoto algoritmu).
+
+Funkce \texttt{triangulate} nejprve všechny vrcholy stěny přepíše do oboustranného spojového seznamu (\texttt{list}) -- společně s jejich polohou je uloženo také jejich číslo udávající pořadí vrcholu na obvodu mnohoúhelníka. Poté jsou odstraněny všechny duplikáty v seznamu (duplikát je poznán podle stejné polohy a odlišného pořadového čísla). Do kontejneru typu \texttt{vector} (je nazván \texttt{map}) jsou zapisována jednotlivá ucha s použitím pořadových čísel vrcholů -- podle těchto pořadových čísel jsou nakonec ze seznamu vrcholů vybrány ty správné. Pro výpočet orientovaných úhlů ve stěně, jež jsou později použity pro kontrolu uch, je potřeba mít referenční vektor (jako referenční zde slouží normálový vektor -- ten je spočítán a později také znovu využit pokud ho již čtený soubor neobsahoval). Samotné dělení na trojúhelníky pak probíhá tím způsobem, že je postupně kontrolován každý trojúhelník tvořený třemi po sobě jdoucími body, zda v sobě obsahuje některý ze zbývajících vrcholů. U každého vrcholu, který není součástí kontrolovaného trojúhelníku, je spočítán úhel (vektoru od vrcholu trojúhelníku ke kontrolovanému bodu) k rameni trojúhelníku\footnote{Ramena jsou dvě a tím pádem i úhly jsou dva -- vždy je brán v potaz ten větší.}. Pokud je tento úhel větší než úhel mezi rameny, je kontrolovaný bod určitě mimo potenciální ucho a můžeme podobným způsobem testovat další body. V opačném případě si ještě nemůžeme být jisti, že je vrchol uvnitř, takže je potřeba otestovat všechny vrcholy ucha vůči tomuto bodu analogicky. Pokud všechny body jsou mimo testované ucho, jsou pořadová čísla bodů zaznamenána do kontejneru \texttt{map} a prostřední bod ucha odstraněn ze spojového seznamu. Tímto způsobem je postupováno dokud ze strany nezbyde trojúhelník. Nakonec je původní \texttt{vector} s uspořádanými trojicemi upraven podle \texttt{map} a rozdělení je hotové.
+
+\subsubsection{Funkce \texttt{render}}
+Tato funkce zajišťuje vykreslování všech objektů ve scéně. Ze všeho nejdříve je původní snímek přemazán novou barvou pozadí a je vyčištěn buffer zaznamenávající barvy a také buffer pro test hloubky. Potom je zvolen shader program, který jsme si v konstruktoru připravili -- sdělíme grafické kartě způsob, jak má data zpracovávat. Protože chceme, aby se v každém snímku kamera mohla posouvat, zavoláme její funkci \texttt{move}. Dále nastavíme tzv. uniform\footnote{\label{uniform}Uniform je zvláštní druh proměnných, ke kterému mají přístup všechny shadery v použitém shader programu. Mohou to být matice, vektory nebo jen jednotlivá čísla.} matice\footnote{Jak jsou matice vytvořeny a použity, je vysvětleno v kapitole o třídě \texttt{Camera}.} pro výpočet pozice bodů ve scéně a uniform\cref{uniform} vektory (o pozici světla a jeho barvě) pro výpočet barvy s osvětlením. Samotné vykreslování je provedeno zavoláním metody \texttt{draw} u všech objektů, které mají uloženou hodnotu \emph{true} v členu \texttt{show}. Nakonec hlavní vlákno programu počká než grafická karta vše vykreslí.
+
+\subsection{Třída \texttt{ShaderManager}}
+Shadery jsou programy určené pro grafickou kartu počítače. Jsou jim posílána data o poloze bodů a barvách -- jejich cílem je z těchto dat vypočítat, jakou barvu by měly mít jednotlivé pixely zobrazené uživateli (ve většině případů\footnote{Ne každý shader musí mít za cíl něco uživateli zobrazit -- např. compute shadery většinou nic nevykreslují.}). Shaderů je více druhů -- např. vertex, fragment, geometry, compute. Každý druh má svoji specifickou roli a spojují se dohromady do tzv. shader programu. V shader programu může být více shaderů stejného druhu, ale také od některých druhů nemusí být shader použit žádný -- záleží na účelu daného programu. V této aplikaci je použit jeden shader program s dvěma shadery -- vertex a fragment.
+
+Protože je větší množství grafických karet (i od různých výrobců) s různými architekturami, jsou shadery vždy kompilovány grafickým ovladačem při spuštění programu.
+
 \chapter{Programovací prostředky}
 \section{Programovací jazyk}
 Téměř celý program byl vytvořen v jazyce C++, který jsem si zvolil proto, že byl se dal celkově popsat jako plně vybaven -- má všechny možnosti objektového programování zároveň s nízkoúrovňovými možnostmi jazyka C. Podle statistik vyhledávání na stránkách společnosti Google se jedná o pátý nejpoužívanější programovací jazyk na světě\cite{github:pypl}. Není interpretovaný, takže nabízí vysoký výkon proti všem interpretovaným jazykům (jako je z populárních jazyků např. Python).
 
 Shadery jsou napsané v jazyce GLSL (OpenGL shading language), což je speciální jazyk právě pro psaní shaderů pro knihovnu OpenGL. Místo GLSL lze zvolit několik alternativ, ale ty nejsou tak časté (bude složitější pro ně najít podporu v případě problémů) a mívají problémy s kompatibilitou.
-\section{Knihovny a externí programy}
-Pro projekt jsem využíval několik knihoven. wxWidgets jsem použil pro grafické ovládání aplikace a načítání obrázků textur. OpenGL bylo použito na prostorové zobrazování -- komunikace s ovladačem grafické karty počítače. Také jsem použil knihovnu GLM (OpenGL Mathematics), jež přidává nové datové typy (vektoru a matice) a operace s nimi. Tyto nové datové typy fungují stejně jako v GLSL a lze je do shaderů posílat přímo.
-%
-\chapter{Instalace}
-\blindtext[1]
-%
-\chapter{Závěr}
-\blindtext[1]
-%
-\section{Sekce jedna}
-\subsection{Podsekce jedna}
-\subsubsection{Podpodsekce jedna}
 
-\blindtext[1]
+\section{Knihovny}
+Pro projekt jsem využíval několik knihoven. Knihovnu wxWidgets jsem použil pro grafické ovládání aplikace a načítání obrázků textur. OpenGL bylo použito na prostorové zobrazování -- zprostředkuje v programu komunikaci s ovladačem grafické karty počítače. Ve spojení s OpenGL použil knihovnu GLM (OpenGL Mathematics), jež přidává nové datové typy (vektoru a matice) a operace s nimi. Tyto nové datové typy fungují stejně jako v GLSL a lze je do shaderů posílat přímo. Kromě GLM ještě k OpenGL používám knihovnu GLEW, která mi poskytne ukazatele na funkce a konstanty OpenGL.
+
+\chapter{Instalace}
+\section{Systémové požadavky}
+
+\chapter{Ovládání}
+\section{Základní ovládání}
+Všemi menu může uživatel procházet pomocí myši a levého tlačítka myši. Kromě toho lze na průchod menu také použít klávesnici -- stisknutím nebo držením levého tlačítka Alt na klávesnici v kombinaci s písmenem, které je podtržené v názvu položky, již chce zvolit. Mezi položkami v menu nebo tlačítky je možné procházet šipkami a volbu potvrdit mezerníkem nebo tlačítekm Enter.
+
+\section{Kamera}
+Kameru může uživatel ovládat pomocí myši. Držením levého tlačítka myši a jejím posouváním se kamera otáčí. Stejným způsobem lze za pomocí pravého tlačítka kamerou posouvat. Točením kolečka myši může uživatel upravit přiblížení kamery.
+
+\section{Postranní panel}
+V postranním panelu si může uživatel ze seznamu zvolit objekt, u něhož si přeje upravit vlastnosti. Pokud uživatel žádný objekt v seznamu nezvolí, nastavení nebudou mít žádný účinek. Také lze zvolit zaškrtnutím políčka vedle jména objektu, zda se má odpovídající objekt zobrazit.
+
+Po zvolení objektu může uživatel změnit polohu, rotaci, či velikost daného objektu ve scéně pomocí číselných polí. U posunu nebo rotace jsou nastavení rozděleny do tří polí -- pro manipulaci s objektem podle os v prostoru. Rotace je udávána ve stupních.
+
+\begin{samepage}
+Roletou v nejnižším řádku uživatel může přepnout režim, ve kterém se budou stěny objektu renderovat:
+\begin{itemize}
+    \item \textbf{Fill} -- Základní režim; stěny jsou vyplněné
+    \item \textbf{Line} -- Ze stěn se renderují jen jejich hrany
+    \item \textbf{Point} -- Ze stěn se renderují jen jejich vrcholy
+\end{itemize}
+\end{samepage}
+
+Pro snazší organizaci lze objekty duplikovat, mazat a přejmenovat příslušnými tlačítky. Při stisknutí tlačítka pro přejmenování se otevře nové okno, ve kterém lze upravit jméno objektu v textovém poli -- změny lze potvrdit kromě tlačítka \emph{Ok} i klávesou Enter.
+
+Další možností změn u objektů jsou barvy a textury. Na obojí se při vybrání objetu a stisknutí tlačítka otevře příslušné menu -- textury mají menu velmi podobné seznamu objektů, v němž se žádoucí textura vybere a následně potvrdí tlačítkem; u barev lze nejen vybírat z několika, ale také je přímo mixovat. Ve stejný moment má objekt vždy buď barvu, nebo texturu -- vybráním jednoho se zruší to druhé.
+
+\chapter{Závěr}
 
 \begin{flushleft}
     \bibliographystyle{czechiso/czechiso}
     \bibliography{citace.bib}
 \end{flushleft}
+
+\listoffigures
+
 \end{document}
