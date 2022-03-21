@@ -6,5 +6,7 @@ docs/*
 include/*
 .vscode/*
 build/*
+samples/*
+!build/icon.png
 *.o
 workspace.code-workspace
