@@ -141,7 +141,7 @@ void ShaderManager::addShader(const char* file)
 }
 
 
-void ShaderManager::linkProgram()
+bool ShaderManager::linkProgram()
 {
     for(auto it = vertexShaders.begin(); it != vertexShaders.end(); it++)
         glAttachShader(ID, (*it)->getID());
@@ -151,23 +151,24 @@ void ShaderManager::linkProgram()
 
     glLinkProgram(ID);
 
-    #ifdef DEBUG
-        GLint linkStatus;
-        glGetProgramiv(ID, GL_LINK_STATUS, &linkStatus);
-        if (linkStatus != GL_TRUE)
-        {
+    GLint linkStatus;
+    glGetProgramiv(ID, GL_LINK_STATUS, &linkStatus);
+    if (linkStatus != GL_TRUE)
+    {
+        #ifdef DEBUG
             GLsizei logLength = 0;
             GLchar message[1024];
             glGetProgramInfoLog(ID, 1024, &logLength, message);
 
             parentManager->sendToLog("Shader program linking failed:\n" +
                 std::string(message));
-        }
-        else
-        {
-            parentManager->sendToLog("Shader program linked");
-        }
+        #endif /* DEBUG */
+        return false;
+    }
+    #ifdef DEBUG
+        parentManager->sendToLog("Shader program linked");
     #endif /* DEBUG */
+    return true;
 }
 
 

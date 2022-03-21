@@ -12,49 +12,37 @@
 class GraphicsManager;
 class TextureManager;
 
-template <typename T>
-class Buffer
+class VertexBuffer
 {
 public:
-    Buffer(GraphicsManager* parent, GLenum type);
-    Buffer(const Buffer& old);
-    ~Buffer();
+    VertexBuffer(GraphicsManager* parent);
+    VertexBuffer(const VertexBuffer& old);
+    ~VertexBuffer();
 
-    void sendData(T* data, GLsizei size);
-    GLenum getType();
+    void sendData(GLfloat* data, GLsizei size);
     GLuint getID();
 
 protected:
     GLuint ID;
     GraphicsManager* parentManager;
-    GLenum bufferType;
-    T* dataStored;
+    GLfloat* dataStored;
     GLsizei dataStoredSize;
-};
-
-class VertexBuffer : public Buffer<GLfloat>
-{
-public:
-    VertexBuffer(GraphicsManager* parent);
 };
 
 
 class VertexArray
 {
 public:
-    VertexArray(GraphicsManager* parent);
+    VertexArray();
     ~VertexArray();
 
-    void link(Buffer<GLfloat>* buffer);
-    void link(Buffer<GLuint>* buffer);
+    void link(VertexBuffer* buffer);
     void enable();
     void bind();
 
 private:
     GLuint ID;
-    GraphicsManager* parentManager;
     std::vector<std::pair<GLenum, GLuint>> buffers;
-
 };
 
 
@@ -63,14 +51,13 @@ class Texture
 public:
     std::string textureName;
 
-    Texture(GraphicsManager* parent, const unsigned char* imageData,
-        int imageWidth, int imageHeight, std::string name);
+    Texture(const unsigned char* imageData, int imageWidth, int imageHeight,
+        std::string name);
     ~Texture();
 
     void bind();
 
 private:
-    GraphicsManager* parentManager;
     GLuint ID;
 };
 
@@ -80,7 +67,6 @@ class Object
 public:
     bool show;
     std::string objectName;
-    bool hasTex;
     std::shared_ptr<Texture> tex;
     glm::vec3 position;
     glm::vec3 rotation;
@@ -109,7 +95,6 @@ private:
     GLfloat* combinedData;
 
     GLfloat color[3];
-    glm::mat4 model;
 
     enum RenderMode
     {

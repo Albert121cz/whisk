@@ -1,5 +1,6 @@
+// https://learnopengl.com/Lighting/Basic-Lighting
+
 #version 460 core
-#extension GL_ARB_bindless_texture : require
 
 out vec4 finalColor;
 

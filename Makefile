@@ -1,11 +1,11 @@
 MAKEFLAGS += -j 5
 
-CXX := g++ --std=c++17
-CXXFLAGS := -Winvalid-pch -Wall -Wextra
-LDFLAGS  := -Wl,-subsystem,windows
+CXX := clang++
+CXXFLAGS := -Winvalid-pch -Wall -Wextra --std=c++17 --target=x86_64-w64-windows-gnu
+LDFLAGS  := -Wl,-subsystem,windows --target=x86_64-w64-windows-gnu
 
 debug: CXXFLAGS += -g -DDEBUG
-debug: LDFLAGS  += -Wl,-subsystem,console -static-libgcc -static-libstdc++
+debug: LDFLAGS  += -Wl,-subsystem,console
 
 OUTPUT := main.exe
 
@@ -13,7 +13,8 @@ SRC_DIR = ./src
 BUILD_DIR = ./build
 SHADERS_DIR = ./src/shaders
 
-CXXFLAGS += -I./lib/gcc810_x64_dll/mswu -I./include
+# including as system libs will suppress warnings
+CXXFLAGS += -isystem./lib/gcc810_x64_dll/mswu -isystem./include
 LDFLAGS += -L./lib/gcc810_x64_dll
 LDFLAGS += -L./lib/glew
 LDFLAGS += -lwxbase315u_gcc810_x64 -lwxmsw315u_core_gcc810_x64 -lwxmsw315u_gl_gcc810_x64 -lopengl32

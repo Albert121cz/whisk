@@ -41,7 +41,7 @@ public:
     ~ShaderManager();
 
     void addShader(const char* file);
-    void linkProgram();
+    bool linkProgram();
     void useProgram();
     GLuint getID() const;
 

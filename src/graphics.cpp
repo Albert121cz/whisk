@@ -1,8 +1,5 @@
 #include "graphics.hpp"
 
-// https://github.com/VictorGordan/opengl-tutorials
-// https://learnopengl.com/
-
 
 GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
 {
@@ -26,7 +23,7 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
     shaders = new ShaderManager(this);
     shaders->addShader("default.vert");
     shaders->addShader("default.frag");
-    shaders->linkProgram();
+    shadersCompiled = shaders->linkProgram();
 
     camera = new Camera();
 }
@@ -42,6 +39,12 @@ GraphicsManager::~GraphicsManager()
 GLuint GraphicsManager::getShadersID() 
 {
     return shaders->getID();
+}
+
+
+bool GraphicsManager::getShadersCompiled()
+{
+    return shadersCompiled;
 }
 
 
@@ -248,7 +251,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
             // object name
             else if (keyword == "o")
             {
-                // o partofname1 partofname2...
+                // o partOfName1 partOfName2...
                 if (line.size() == 1)
                     throw std::invalid_argument("The name is missing");
                 
@@ -311,7 +314,7 @@ void GraphicsManager::setObjectColor(int idx, GLfloat r, GLfloat g, GLfloat b)
     #endif /* DEBUG */
 
     objects[idx]->setColor(r, g, b);
-    objects[idx]->hasTex = false;
+    objects[idx]->tex = nullptr;
 }
 
 
@@ -323,7 +326,6 @@ void GraphicsManager::setObjectTex(int idx, std::shared_ptr<Texture> tex)
     #endif /* DEBUG */
 
     objects[idx]->tex = tex;
-    objects[idx]->hasTex = true;
 }
 
 
@@ -439,7 +441,7 @@ void GraphicsManager::addTexture(const unsigned char* data, int width,
     int height, std::string name)
 {
     textures.push_back(
-        std::make_shared<Texture>(this, data, width, height, name));
+        std::make_shared<Texture>(data, width, height, name));
 }
 
 
@@ -630,7 +632,7 @@ void GraphicsManager::triangulate(
 
     std::list<vertex>::iterator it = verticesList.begin();
 
-    // map is used to store indices from which are contructed the triangles
+    // map is used to store indices from which are constructed the triangles
     std::vector<GLuint> map;
 
     // to get oriented angle in the face a reference axis is needed
@@ -793,6 +795,8 @@ glm::mat4 Camera::viewMatrix()
     if (radius < 0)
         radius = 1.0f;
 
+    // calculations are copied
+    // https://learnopengl.com/Getting-started/Camera
     toTarget.x = cos(glm::radians(-yaw)) * cos(glm::radians(pitch));
     toTarget.y = sin(glm::radians(pitch));
     toTarget.z = sin(glm::radians(-yaw)) * cos(glm::radians(pitch));

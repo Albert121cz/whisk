@@ -75,7 +75,6 @@ MainFrame::MainFrame()
     SidePanel* side = new SidePanel(this, canvas->getGraphicsManager());
     mainSizer->Add(side, 0, wxEXPAND);
 
-    // Icon obtained: https://www.nisbets.co.uk/vogue-heavy-whisk-12in/k546
     SetIcon(wxIcon("icon.png", wxBITMAP_TYPE_PNG));
 
     SetMinSize(wxSize(800, 600));
@@ -490,7 +489,7 @@ TextureFrame::TextureFrame(MainFrame* parent,
     }
 
     TextureFrameButtonPanel* buttons = new TextureFrameButtonPanel(this,
-        mainFrame, manager, listBox, idx);
+        manager, listBox, idx);
     sizer->Add(buttons, 0, wxTOP, 2);
 
     SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_MENU));
@@ -521,10 +520,9 @@ wxBEGIN_EVENT_TABLE(TextureFrameButtonPanel, wxPanel)
 wxEND_EVENT_TABLE()
 
 TextureFrameButtonPanel::TextureFrameButtonPanel(TextureFrame* parent,
-    MainFrame* main, std::shared_ptr<GraphicsManager> manager,
-    wxListBox* target, int idx)
-    : wxPanel(parent), parentFrame(parent), mainFrame(main),
-    graphicsManager(manager), targetListBox(target), objIdx(idx)
+    std::shared_ptr<GraphicsManager> manager, wxListBox* target, int idx)
+    : wxPanel(parent), parentFrame(parent), graphicsManager(manager),
+    targetListBox(target), objIdx(idx)
 {
     wxGridSizer* sizer = new wxGridSizer(2, 12, 6);
 
@@ -898,7 +896,15 @@ bool Canvas::wxGLCtxExists()
 bool Canvas::graphicsManagerExists()
 {
     if (graphicsManager)
+    {
+        if (!graphicsManager->getShadersCompiled())
+        {
+            wxMessageBox("Shader compilation failed", "OpenGL error",
+            wxOK | wxICON_ERROR, this);
+            return false;
+        }
         return true;
+    }
     else
         return false;
 }

@@ -40,6 +40,7 @@ public:
     ~GraphicsManager();
 
     GLuint getShadersID();
+    bool getShadersCompiled();
     void render();
     void sendToLog(std::string message);
     void setUniformMatrix(glm::mat4 mat, const char* name);
@@ -72,6 +73,9 @@ private:
     Canvas* parentCanvas;
     ShaderManager* shaders;
     Camera* camera;
+
+    bool shadersCompiled;
+
     std::vector<std::unique_ptr<Object>> objects;
     std::vector<std::shared_ptr<Texture>> textures;
 

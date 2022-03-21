@@ -1,77 +1,59 @@
 #include "vertices.hpp"
 
 
-template <typename T>
-Buffer<T>::Buffer(GraphicsManager* parent, GLenum type)
-    : parentManager(parent), bufferType(type)
+VertexBuffer::VertexBuffer(GraphicsManager* parent)
+    : parentManager(parent)
 {
     dataStoredSize = 0;
     glCreateBuffers(1, &ID);
 }
 
 
-template <typename T>
-Buffer<T>::Buffer(const Buffer& old)
+VertexBuffer::VertexBuffer(const VertexBuffer& old)
 {
     parentManager = old.parentManager;
-    bufferType = old.bufferType;
     dataStoredSize = old.dataStoredSize;
-    dataStored = new T[dataStoredSize];
+    dataStored = new GLfloat[dataStoredSize];
 
     for (GLsizei i = 0; i < dataStoredSize; i++)
         dataStored[i] = old.dataStored[i];
 
     glCreateBuffers(1, &ID);
-    glNamedBufferData(ID, dataStoredSize*sizeof(T), dataStored, GL_STATIC_DRAW);
+    glNamedBufferData(ID, dataStoredSize * sizeof(GLfloat),
+        dataStored, GL_STATIC_DRAW);
 }
 
 
-template <typename T>
-Buffer<T>::~Buffer()
+VertexBuffer::~VertexBuffer()
 {
     glDeleteBuffers(1, &ID);
     delete[] dataStored;
 }
 
 
-template <typename T>
-void Buffer<T>::sendData(T* data, GLsizei size)
+void VertexBuffer::sendData(GLfloat* data, GLsizei size)
 {
     // data is stored inside the object for copying
     if (dataStoredSize != 0)
         delete dataStored;
 
     dataStoredSize = size;
-    dataStored = new T[dataStoredSize];
+    dataStored = new GLfloat[dataStoredSize];
 
     for (GLsizei i = 0; i < dataStoredSize; i++)
         dataStored[i] = data[i];
 
-    glNamedBufferData(ID, size * sizeof(T), data, GL_STATIC_DRAW);
+    glNamedBufferData(ID, size * sizeof(GLfloat), data, GL_STATIC_DRAW);
 }
 
 
-template <typename T>
-GLenum Buffer<T>::getType()
-{
-    return bufferType;
-}
-
-
-template <typename T>
-GLuint Buffer<T>::getID()
+GLuint VertexBuffer::getID()
 {
     return ID;
 }
 
 
-VertexBuffer::VertexBuffer(GraphicsManager* parent)
-    : Buffer<GLfloat>(parent, GL_ARRAY_BUFFER)
-{
-}
-
-
-VertexArray::VertexArray(GraphicsManager* parent) : parentManager(parent) 
+VertexArray::VertexArray()
 {
     glGenVertexArrays(1, &ID);
 }
@@ -118,15 +100,9 @@ void VertexArray::enable()
         glBindBuffer((*it).first, 0);
 }
 
-void VertexArray::link(Buffer<GLfloat>* buffer)
+void VertexArray::link(VertexBuffer* buffer)
 {
-    buffers.push_back(std::pair(buffer->getType(), buffer->getID()));
-}
-
-
-void VertexArray::link(Buffer<GLuint>* buffer)
-{
-    buffers.push_back(std::pair(buffer->getType(), buffer->getID()));
+    buffers.push_back(std::pair(GL_ARRAY_BUFFER, buffer->getID()));
 }
 
 
@@ -136,9 +112,9 @@ void VertexArray::bind()
 }
 
 
-Texture::Texture(GraphicsManager* parent, const unsigned char* imageData, 
-    int imageWidth, int imageHeight, std::string name)
-    : textureName(name), parentManager(parent)
+Texture::Texture(const unsigned char* imageData, int imageWidth,
+    int imageHeight, std::string name)
+    : textureName(name)
 {
     glGenTextures(1, &ID);
 
@@ -184,7 +160,7 @@ Object::Object(GraphicsManager* parent, std::string name, int lines,
     :  objectName(name), parentManager(parent), lineCount(lines)
 {
     show = true;
-    hasTex = false;
+    tex = nullptr;
     position = glm::vec3(0.0f, 0.0f, 0.0f);
     rotation = glm::vec3(0.0f, 0.0f, 0.0f);
     size = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -237,7 +213,7 @@ Object::Object(GraphicsManager* parent, std::string name, int lines,
     vertexBuffer = new VertexBuffer(parentManager);
     vertexBuffer->sendData(combinedData, combinedLen);
 
-    vertexArray = new VertexArray(parentManager);
+    vertexArray = new VertexArray();
     vertexArray->link(vertexBuffer);
     vertexArray->enable();
 }
@@ -254,7 +230,6 @@ Object::~Object()
 Object::Object(const Object& old)
 {
     show = old.show;
-    hasTex = old.hasTex;
     objectName = old.objectName + " copy";
     position = old.position;
     rotation = old.rotation;
@@ -276,7 +251,7 @@ Object::Object(const Object& old)
 
     vertexBuffer = new VertexBuffer(*old.vertexBuffer);
 
-    vertexArray = new VertexArray(parentManager);
+    vertexArray = new VertexArray();
     vertexArray->link(vertexBuffer);
     vertexArray->enable();
 }
@@ -310,7 +285,7 @@ void Object::draw()
 
     GLint useTex;
 
-    if (hasTex)
+    if (tex != nullptr)
     {
         useTex = 1;
         tex->bind();
@@ -354,8 +329,3 @@ void Object::draw()
     glDrawArrays(GL_LINES, combinedLen / 11 - lineCount / 3, combinedLen / 11);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
-
-
-// explicit template instantiation
-// https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
-template class Buffer<GLfloat>;

@@ -48,7 +48,6 @@ public:
 
 private:
     MainFrame* frame;
-    ObjectList* objectFrame;
 };
 
 
@@ -101,7 +100,6 @@ private:
     std::shared_ptr<GraphicsManager> graphicsManager;
     ObjectButtonPanel* buttons;
     wxCheckListBox* listbox;
-    SidePanelRefreshTimer* timer;
 
     void onCheckBox(wxCommandEvent& event);
 
@@ -206,12 +204,11 @@ private:
 class TextureFrameButtonPanel : public wxPanel
 {
 public:
-    TextureFrameButtonPanel(TextureFrame* parent, MainFrame* main,
+    TextureFrameButtonPanel(TextureFrame* parent, 
     std::shared_ptr<GraphicsManager> manager, wxListBox* target, int idx);
 
 private:
     TextureFrame* parentFrame;
-    MainFrame* mainFrame;
     std::shared_ptr<GraphicsManager> graphicsManager;
     wxListBox* targetListBox;
     int objIdx;
