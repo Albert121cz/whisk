@@ -102,7 +102,8 @@ void VertexArray::enable()
 
 void VertexArray::link(VertexBuffer* buffer)
 {
-    buffers.push_back(std::pair(GL_ARRAY_BUFFER, buffer->getID()));
+    buffers.push_back(std::pair<GLenum, GLuint>(
+        GL_ARRAY_BUFFER, buffer->getID()));
 }
 
 

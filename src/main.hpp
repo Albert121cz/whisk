@@ -10,7 +10,6 @@
 #endif
 
 #include <wx/image.h>
-#include <wx/wfstream.h>
 #include <wx/glcanvas.h>
 #include <wx/spinctrl.h>
 #include <wx/colordlg.h>
@@ -18,6 +17,7 @@
 #include <GL/glew.h>
 #include <GL/wglew.h>
 #include <glm/glm.hpp>
+#include <fstream>
 #include <memory>
 #include <vector>
 #include <chrono>

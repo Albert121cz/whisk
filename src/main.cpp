@@ -108,9 +108,9 @@ void MainFrame::onObjLoad(wxCommandEvent&)
 
     wxString path = fileDialog.GetPath();
 
-    wxFileInputStream loadStream(path);
+    std::ifstream loadStream(path.ToStdString());
     
-    if (loadStream.IsOk())
+    if (loadStream)
         canvas->getGraphicsManager()->newObject(path.ToStdString());
     else
         wxMessageBox("The object file failed to open", "Object load error",
@@ -546,7 +546,7 @@ void TextureFrameButtonPanel::onNew(wxCommandEvent&)
 {
     wxFileDialog loadFileDialog(this, "Load texture file", "", "", 
     "PNG (*.png)|*.png|BPM (*.bmp)|*.bmp|JPEG (*.jpg; *.jpeg)|*.jpg;*.jpeg", 
-                wxFD_OPEN|wxFD_FILE_MUST_EXIST);
+        wxFD_OPEN|wxFD_FILE_MUST_EXIST);
     
     if (loadFileDialog.ShowModal() == wxID_CANCEL)
         return;
