@@ -1,12 +1,48 @@
-\DTMsetstyle{czech}
-
-\hyphenpenalty=10000
+\hyphenpenalty=200
 \hbadness=10000
 \setlength{\emergencystretch}{30pt}
 
 \setlength{\parindent}{0em}
 
 \setlist{nosep}
+
+\graphicspath{{./images/}}
+
+\pagestyle{fancy}
+\setlength{\headheight}{14.49998pt}
+\addtolength{\topmargin}{-2.49998pt}
+\renewcommand{\chaptermark}[1]{\markboth{\textbf{\Roman{chapter}.\ #1}}{}}
+\renewcommand{\sectionmark}[1]{\markright{\arabic{section}.\ #1}}
+
+\fancypagestyle{withouthdr}{%
+  \fancyhead{}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+\fancypagestyle{plain}{%
+  \fancyhead[R]{\leftmark}
+}
+
+\fancypagestyle{toc}{%
+  \fancyhead[R]{\textbf{Obsah}}
+}
+
+\fancypagestyle{lof}{%
+  \fancyhead[R]{\textbf{Seznam obrázků}}
+}
+
+% page style for normal pages
+\fancyhead[L]{\textbeuron{Whisk}}
+\fancyhead[R]{\nouppercase{\rightmark}}
+\renewcommand{\headrulewidth}{1.5pt}
+\xpatchcmd{\part}{\thispagestyle{plain}}{\thispagestyle{withouthdr}}{}{}
+
+\newcommand{\placeholder}{}
+\newenvironment{chapterwithoutpagebreak}
+  {\xpatchcmd{\chapter}{\clearpage}{\placeholder}{}{}}
+  {\xpatchcmd{\chapter}{\placeholder}{\clearpage}{}{}}
+
+\def\bibfont{\small}
 
 \newlength{\bodyparskip}
 \setlength{\bodyparskip}{0.7em}
