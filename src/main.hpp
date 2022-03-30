@@ -279,7 +279,6 @@ public:
     bool graphicsManagerExists();
     void flip();
     float viewportAspectRatio();
-    void log(std::string str);
     bool extCheck(std::pair<bool, std::string> in);
     std::shared_ptr<GraphicsManager> getGraphicsManager();
     MouseInfo getMouseInfo();

@@ -73,6 +73,9 @@ void VertexArray::enable()
     for (auto it = buffers.begin(); it != buffers.end(); it++)
         glBindBuffer((*it).first, (*it).second);
 
+    // usage of the vertex array inspired by:
+    // https://learnopengl.com/Getting-started/Hello-Triangle
+
     // data structure inside vertex array
     //  pos  | color | tex | normal
     // X Y Z | R G B | X Y | X Y Z
@@ -121,7 +124,7 @@ Texture::Texture(const unsigned char* imageData, int imageWidth,
 
     glBindTexture(GL_TEXTURE_2D, ID);
     
-    // setting up down/upscaling
+    // setting up bilinear upscaling and trilinear downscaling
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
         GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
@@ -131,7 +134,6 @@ Texture::Texture(const unsigned char* imageData, int imageWidth,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    // TODO: load and handle RGBA
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imageWidth, imageHeight, 0, GL_RGB,
         GL_UNSIGNED_BYTE, imageData);
 
@@ -180,6 +182,7 @@ Object::Object(GraphicsManager* parent, std::string name, int lines,
 
     float texVal, normVal;
 
+    // concatenate all data into a single chunk
     for (size_t vertex = 0; vertex < vert->size() / 3; vertex++)
     {
         for (size_t coordIdx = 0; coordIdx < 3; coordIdx++)
@@ -284,6 +287,7 @@ void Object::draw()
     int useTexUniform = glGetUniformLocation(parentManager->getShadersID(),
         "useTex");
 
+    // let shader know if it should try to use texture
     GLint useTex;
 
     if (tex != nullptr)
@@ -296,13 +300,14 @@ void Object::draw()
 
     glUniform1i(useTexUniform, useTex);
     
+    // calculate model matrix - where is object located in the world
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::rotate(model, glm::radians(rotation.x),
-        glm::normalize(glm::vec3(1.0f, 0.0f, 0.0f)));
+        glm::vec3(1.0f, 0.0f, 0.0f));
     model = glm::rotate(model, glm::radians(rotation.y),
-        glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+        glm::vec3(0.0f, 1.0f, 0.0f));
     model = glm::rotate(model, glm::radians(rotation.z),
-        glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
+        glm::vec3(0.0f, 0.0f, 1.0f));
     model = glm::translate(model, position);
     model = glm::scale(model, size);
 

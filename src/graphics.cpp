@@ -4,13 +4,13 @@
 GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
 {
     lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
-    cameraToLight = glm::vec3(2.0f, 2.0f, -2.0f);
 
     #ifdef DEBUG
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(oglDebug::GLDebugMessageCallback, NULL);
     #endif /* DEBUG */
 
+    // enable z-buffering depth test
     glEnable(GL_DEPTH_TEST);
 
     // v-sync
@@ -20,7 +20,7 @@ GraphicsManager::GraphicsManager(Canvas* parent) : parentCanvas(parent)
         wglSwapIntervalEXT(1);
 
     // loading vertex and fragment shaders
-    shaders = new ShaderManager(this);
+    shaders = new ShaderManager();
     shaders->addShader("default.vert");
     shaders->addShader("default.frag");
     shadersCompiled = shaders->linkProgram();
@@ -50,6 +50,7 @@ bool GraphicsManager::getShadersCompiled()
 
 void GraphicsManager::render()
 {
+    // clear the background and z-buffer
     glClearColor(0.135f, 0.135f, 0.135f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -62,24 +63,18 @@ void GraphicsManager::render()
         parentCanvas->viewportAspectRatio()), "projection");
     
     setUniformVector(lightColor, "lightColor");
-    setUniformVector(camera->getPos() + cameraToLight, "lightPos");
+    setUniformVector(camera->getPos(), "lightPos");
 
     for (auto it = objects.begin(); it != objects.end(); it++)
         if ((*it)->show)
             (*it)->draw();
         
-    // Nvidia cards spit out performance warnings without this call
+    // Nvidia warns about performance without this call
     // https://stackoverflow.com/a/15079431
     glUseProgram(0);
 
     // CPU waits for the GPU to execute everything
     glFinish();
-}
-
-
-void GraphicsManager::sendToLog(std::string message)
-{
-    parentCanvas->log(message);
 }
 
 
@@ -104,6 +99,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
     std::vector<std::tuple<int, int, int>> faceData;
     std::pair<int, int> lineData;
 
+    // to save memory all recursive calls use the same data
     if (vertices == nullptr)
         vertices = std::make_shared<std::vector<GLfloat>>();
 
@@ -113,8 +109,8 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
     if (normals == nullptr)
         normals = std::make_shared<std::vector<GLfloat>>();
 
-    // all final arrays are only for 1 object - they are not shared between
-    // objects in the same file
+    // all final arrays are only for 1 object
+    // they are not shared between objects in the same file
     std::shared_ptr<std::vector<GLfloat>> finalLineVertices =
         std::make_shared<std::vector<GLfloat>>();
     std::shared_ptr<std::vector<GLfloat>> finalVertices =
@@ -272,7 +268,12 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
     }
     catch (std::invalid_argument& exception)
     {
-        sendToLog("Object loading error: " + std::string(exception.what()));
+        // invalid_argument can be non-number characters in stof
+        // or manually thrown incompatible number of parameters
+        #ifdef DEBUG
+            std::cout << "Object loading error: " << exception.what()
+                << std::endl;
+        #endif /* DEBUG */
         return;
     }
 
@@ -289,7 +290,7 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
         finalNormals));
     
     #ifdef DEBUG
-        sendToLog("Object added: " + name);
+        std::cout << "Object added: " << name << std::endl;
     #endif /* DEBUG */
 }
 
@@ -297,8 +298,8 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
 void GraphicsManager::renameObject(int idx, std::string newName)
 {
     #ifdef DEBUG
-        sendToLog("Object name changed: " + objects[idx]->objectName + " -> " +
-            newName);
+        std::cout << "Object name changed: " << objects[idx]->objectName
+            << " -> " << newName << std::endl;
     #endif /* DEBUG */
 
     objects[idx]->objectName = newName;
@@ -308,9 +309,8 @@ void GraphicsManager::renameObject(int idx, std::string newName)
 void GraphicsManager::setObjectColor(int idx, GLfloat r, GLfloat g, GLfloat b)
 {
     #ifdef DEBUG
-        sendToLog("Object color changed: " + objects[idx]->objectName + " -> " +
-            std::to_string(r) + "x" + std::to_string(g) + "x" +
-            std::to_string(b));
+        std::cout << "Object color changed: " << objects[idx]->objectName 
+            << " -> " << r << "x" << g << "x" << b << std::endl;
     #endif /* DEBUG */
 
     objects[idx]->setColor(r, g, b);
@@ -321,8 +321,8 @@ void GraphicsManager::setObjectColor(int idx, GLfloat r, GLfloat g, GLfloat b)
 void GraphicsManager::setObjectTex(int idx, std::shared_ptr<Texture> tex)
 {
     #ifdef DEBUG
-        sendToLog("Object texture changed: " + objects[idx]->objectName + " -> "
-            + tex->textureName);
+        std::cout << "Object texture changed: " << objects[idx]->objectName
+            << " -> " << tex->textureName << std::endl;
     #endif /* DEBUG */
 
     objects[idx]->tex = tex;
@@ -342,7 +342,8 @@ void GraphicsManager::duplicateObject(int idx)
         std::make_unique<Object>(*objects[idx]));
     
     #ifdef DEBUG
-        sendToLog("Object duplicated: " + objects[idx]->objectName);
+        std::cout << "Object duplicated: " << objects[idx]->objectName
+            << std::endl;
     #endif /* DEBUG */
 }
 
@@ -353,7 +354,8 @@ void GraphicsManager::deleteObject(int idx)
         return;
 
     #ifdef DEBUG
-        sendToLog("Object deleted: " + objects[idx]->objectName);
+        std::cout << "Object deleted: " << objects[idx]->objectName
+            << std::endl;
     #endif /* DEBUG */
 
     objects.erase(objects.begin() + idx);
@@ -370,7 +372,8 @@ void GraphicsManager::showOrHideObject(int idx)
         objects[idx]->show = false;
 
         #ifdef DEBUG
-            sendToLog("Object hid: " + objects[idx]->objectName);
+            std::cout << "Object hid: " << objects[idx]->objectName
+                << std::endl;
         #endif /* DEBUG */
     }
     else
@@ -378,7 +381,8 @@ void GraphicsManager::showOrHideObject(int idx)
         objects[idx]->show = true;
 
         #ifdef DEBUG
-            sendToLog("Object showed: " + objects[idx]->objectName);
+            std::cout << "Object showed: " << objects[idx]->objectName
+                << std::endl;
         #endif /* DEBUG */
     }
 }
@@ -590,7 +594,7 @@ std::vector<std::tuple<int, int, int>> GraphicsManager::parseFace(
 }
 
 
-// using ear-clipping method
+// using ear-clipping method; used algorithm explanation:
 // https://www.geometrictools.com/Documentation/TriangulationByEarClipping.pdf
 void GraphicsManager::triangulate(
     std::vector<std::tuple<int, int, int>>* indices,
@@ -654,7 +658,10 @@ void GraphicsManager::triangulate(
 
         // triangleVertices contains vertices from a single testing triangle,
         // each triangle is tested if it contains some of the other points,
-        // if it doesn't contain any, it is an ear and can be cut off   
+        // if it doesn't contain any, it is an ear and can be cut off
+
+        // add 3 consecutive vertices to triangleVertices (first and last
+        // vertex in the verticesList are consecutive)
         triangleVertices.clear();
         if (it == verticesList.begin())
             triangleVertices.push_back(*std::prev(verticesList.end(), 1));
@@ -672,6 +679,7 @@ void GraphicsManager::triangulate(
         for (std::list<vertex>::iterator testIt = verticesList.begin();
             testIt != verticesList.end(); testIt++)
         {
+            // skip vertices which define the tested triangle
             skip = false;
             for (vertex triangle : triangleVertices)
                 if (testIt->idx == triangle.idx)
@@ -697,6 +705,8 @@ void GraphicsManager::triangulate(
                 else
                     next = triangleIt + 1;
 
+                // get vectors to the other vertices and calculate the angle
+                // between them
                 vecToPrev = prev->pos - triangleIt->pos;
                 vecToNext = next->pos - triangleIt->pos;
 
@@ -704,6 +714,8 @@ void GraphicsManager::triangulate(
 
                 referenceAngle = glm::orientedAngle(referenceVec,
                     glm::normalize(vecToPrev), *normalVec);
+
+                // the acute angle is needed for the comparison
                 if (referenceAngle > glm::pi<float>())
                 {
                     referenceVec = glm::normalize(vecToPrev);
@@ -717,6 +729,9 @@ void GraphicsManager::triangulate(
                 
                 if (testAngle > referenceAngle)
                 {
+                    // if at least one of the triangle's vertices detect
+                    // the tested vertex being outside it is no longer needed to
+                    // check with the other triangle's vertices
                     outside = true;
                     break;
                 }
@@ -772,7 +787,7 @@ Camera::Camera()
     horizMove = 0.0f;
     vertiMove = 0.0f;
 
-    yaw = -90.0f;
+    yaw = 90.0f;
     pitch = 0.0f;
     radius = 10.0f;
 
@@ -780,6 +795,7 @@ Camera::Camera()
     closeClipBorder = 0.1f;
     farClipBorder = 100.0f;
 
+    // target is point around which the camera rotates
     target = glm::vec3(0.0f, 0.0f, 0.0f);
     upDirection = glm::vec3(0.0f, 1.0f, 0.0f);
 }
@@ -855,6 +871,7 @@ void Camera::move(MouseInfo info)
         cameraMovingPrevFrame = false;
     }
 }
+
 
 glm::vec3 Camera::getPos()
 {

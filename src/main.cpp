@@ -565,7 +565,9 @@ void TextureFrameButtonPanel::onNew(wxCommandEvent&)
 
     std::string path(loadFileDialog.GetPath());
 
-    wxLogVerbose("Texture file opened: '%s'", path);
+    #ifdef DEBUG
+        std::cout << "Texture file opened: " << path << std::endl;
+    #endif /* DEBUG */
     
     std::regex fileNameRegex("[^\\\\]*$");
     std::smatch fileName;
@@ -809,6 +811,7 @@ wxBEGIN_EVENT_TABLE(Canvas, wxGLCanvas)
 wxEND_EVENT_TABLE()
 
 
+// to 
 // https://github.com/wxWidgets/wxWidgets/tree/master/samples/opengl/pyramid
 Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
       : wxGLCanvas(parent, canvasAttrs), parentFrame(parent)
@@ -832,15 +835,18 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
     {
         wxString msg_out;
         msg_out.Printf("The graphics driver failed to initialize OpenGL v%i.%i",
-                            OGL_MAJOR_VERSION, OGL_MINOR_VERSION);
+            OGL_MAJOR_VERSION, OGL_MINOR_VERSION);
         wxMessageBox(msg_out,
-                     "OpenGL initialization error", wxOK | wxICON_ERROR, this);
+            "OpenGL initialization error", wxOK | wxICON_ERROR, this);
         delete wxGLCtx;
         wxGLCtx = nullptr;
         return;
     }
-    wxLogVerbose("OpenGL v%i.%i successfully initialized",
-        OGL_MAJOR_VERSION, OGL_MINOR_VERSION);
+
+    #ifdef DEBUG
+        std::cout << "OpenGL v" << OGL_MAJOR_VERSION << "." << OGL_MINOR_VERSION
+            << " successfully initialized" << std::endl;
+    #endif /* DEBUG */
 
     SetCurrent(*wxGLCtx);
 
@@ -848,14 +854,18 @@ Canvas::Canvas(MainFrame* parent, const wxGLAttributes& canvasAttrs)
     GLenum error = glewInit();
     if (error != GLEW_OK)
     {
-        wxLogVerbose("%s", glewGetErrorString(error));
+        #ifdef DEBUG
+            std::cout << glewGetErrorString(error) << std::endl;
+        #endif /* DEBUG */
         wxMessageBox("Glew failed to initialize", "Glew error",
             wxOK | wxICON_ERROR, this);
         delete wxGLCtx;
         wxGLCtx = nullptr;
         return;
     }
-    wxLogVerbose("Glew successfully initialized");
+    #ifdef DEBUG
+        std::cout << "Glew successfully initialized" << std::endl;
+    #endif /* DEBUG */
 
     std::vector<std::pair<bool, std::string>> extensions = 
     {
@@ -927,26 +937,20 @@ float Canvas::viewportAspectRatio()
 }
 
 
-void Canvas::log(std::string str)
-{
-    wxLogVerbose("%s", str);
-}
-
-
 bool Canvas::extCheck(std::pair<bool, std::string> in)
 {
     if (in.first)
     {
-        wxLogVerbose("Extension %s supported", in.second);
+        #ifdef DEBUG
+            std::cout << "Extension " << in.second << " supported" << std::endl;
+        #endif /* DEBUG */
         return true;
     }
-    else
-    {
-        wxString msg;
-        msg.Printf("The GPU driver does not support %s extension", in.second);
-        wxMessageBox(msg, "Initialization error", wxOK | wxICON_ERROR, this);
-        return false;
-    }
+
+    wxString msg;
+    msg.Printf("The GPU driver does not support %s extension", in.second);
+    wxMessageBox(msg, "Initialization error", wxOK | wxICON_ERROR, this);
+    return false;
 }
 
 

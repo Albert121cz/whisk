@@ -25,7 +25,7 @@ void main()
     float ambientLightStrength = 0.1f;
     vec3 ambientLight = ambientLightStrength * lightColor;
 
-    float diffuseLightStrength = 0.85f;
+    float diffuseLightStrength = 1.0f;
     float diffuse = abs(
         dot(normalize(vertNormal), normalize(lightPos - vertPos)));
     vec3 diffuseLight = diffuse * diffuseLightStrength * lightColor;

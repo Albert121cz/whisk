@@ -1,7 +1,7 @@
 # Whisk
 This is a school project. The goal of the app is the ability to load and manipulate with objects in 3D space. Objects can be loaded from Wavefront object (*.obj) files. The objects can be wrapped with textures - most of the common formats are supported.
 
-The detailed documentation can be found in the release.
+The detailed documentation (in Czech) can be found in the release.
 
 ## Building
 The app is built on Windows (10 and 11 tested) using MinGW (8.1.0 - standard C++17 needed) with GNU-make.

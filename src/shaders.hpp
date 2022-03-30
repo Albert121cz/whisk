@@ -19,7 +19,7 @@ class GraphicsManager;
 class Shader
 {
 public:
-    Shader(GraphicsManager* parent, const char* shaderFile, const GLenum type);
+    Shader(const char* shaderFile, const GLenum type);
     ~Shader();
 
     GLuint getID() const;
@@ -27,7 +27,6 @@ public:
 
 private:
     GLuint ID;
-    GraphicsManager* parentManager;
     const GLenum shaderType;
     bool initialized;
 
@@ -37,7 +36,7 @@ private:
 class ShaderManager
 {
 public:
-    ShaderManager(GraphicsManager* parent);
+    ShaderManager();
     ~ShaderManager();
 
     void addShader(const char* file);
@@ -47,7 +46,6 @@ public:
 
 private:
     GLuint ID;
-    GraphicsManager* parentManager;
     std::vector<std::unique_ptr<Shader>> vertexShaders;
     std::vector<std::unique_ptr<Shader>> fragmentShaders;
 };

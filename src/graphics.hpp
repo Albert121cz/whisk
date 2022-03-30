@@ -42,7 +42,6 @@ public:
     GLuint getShadersID();
     bool getShadersCompiled();
     void render();
-    void sendToLog(std::string message);
     void setUniformMatrix(glm::mat4 mat, const char* name);
     void newObject(std::string file, size_t startLine = 0,
         std::shared_ptr<std::vector<std::vector<std::string>>> data = nullptr,
@@ -80,7 +79,6 @@ private:
     std::vector<std::shared_ptr<Texture>> textures;
 
     glm::vec3 lightColor;
-    glm::vec3 cameraToLight;
 
     void setUniformVector(glm::vec3 vec, const char* name);
     std::vector<std::vector<std::string>> parseFile(std::string name);
@@ -99,6 +97,7 @@ public:
 
     glm::mat4 viewMatrix();
     glm::mat4 projectionMatrix(float aspectRatio);
+    glm::mat4 cameraMatrix();
     void move(MouseInfo info);
     glm::vec3 getPos();
 

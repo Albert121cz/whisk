@@ -1,9 +1,7 @@
 #include "shaders.hpp"
 
 
-Shader::Shader(GraphicsManager* parent, const char* shaderFile,
-    const GLenum type)
-    : parentManager(parent), shaderType(type)
+Shader::Shader(const char* shaderFile, const GLenum type) : shaderType(type)
 {
     initialized = false;
     std::string shaderString = openFile(shaderFile);
@@ -11,15 +9,13 @@ Shader::Shader(GraphicsManager* parent, const char* shaderFile,
     if (shaderString.empty())
     {
         #ifdef DEBUG
-            parentManager->sendToLog("Shader failed to load: " +
-                std::string(shaderFile));
+            std::cout << "Shader failed to load: " << shaderFile << std::endl;
         #endif /* DEBUG */
         return;
     }
 
     #ifdef DEBUG
-        parentManager->sendToLog("Shader loaded: " +
-            std::string(shaderFile));
+        std::cout << "Shader loaded: " << shaderFile << std::endl;
     #endif /* DEBUG */
 
     const char* shaderSource = shaderString.c_str();
@@ -42,13 +38,12 @@ Shader::Shader(GraphicsManager* parent, const char* shaderFile,
             GLchar message[1024];
             glGetShaderInfoLog(ID, 1024, &logLength, message);
 
-            parentManager->sendToLog("Shader compilation failed: " + 
-                std::string(shaderFile) + "\n" + std::string(message));
+            std::cout << "Shader compilation failed: " << shaderFile << "\n"
+                << message << std::endl;
         }
         else
         {
-            parentManager->sendToLog("Shader compiled: " +
-                std::string(shaderFile));
+            std::cout << "Shader compiled: " << shaderFile << std::endl;
         }
     #endif /* DEBUG */
 }
@@ -73,6 +68,7 @@ bool Shader::getInitialized() const
 }
 
 
+// the whole function is sourced from:
 // https://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
 std::string Shader::openFile(const char *filename)
 {
@@ -93,7 +89,7 @@ std::string Shader::openFile(const char *filename)
 }
 
 
-ShaderManager::ShaderManager(GraphicsManager* parent) : parentManager(parent)
+ShaderManager::ShaderManager()
 {
     ID = glCreateProgram();
 }
@@ -110,15 +106,17 @@ void ShaderManager::addShader(const char* file)
     std::string fileString(file);
     std::smatch fileExtension;
     
+    // used to make the regular expression
     // https://cpprocks.com/files/c++11-regex-cheatsheet.pdf
     const std::regex fileExtensionRegex("\\..{4}$");
 
+    // regular expression is used to recognize shader type from the extension
     std::regex_search(fileString, fileExtension, fileExtensionRegex);
 
     if (fileExtension[0] == ".vert")
     {
         vertexShaders.push_back(std::make_unique<Shader>
-            (parentManager, file, GL_VERTEX_SHADER));
+            (file, GL_VERTEX_SHADER));
         if (!vertexShaders.back()->getInitialized())
             vertexShaders.pop_back();
     }
@@ -126,7 +124,7 @@ void ShaderManager::addShader(const char* file)
     else if (fileExtension[0] == ".frag")
     {
         fragmentShaders.push_back(std::make_unique<Shader>
-            (parentManager, file, GL_FRAGMENT_SHADER));
+            (file, GL_FRAGMENT_SHADER));
         if (!fragmentShaders.back()->getInitialized())
             fragmentShaders.pop_back();
     }
@@ -134,8 +132,7 @@ void ShaderManager::addShader(const char* file)
     else
     {
         #ifdef DEBUG
-            parentManager->sendToLog("Unsupported file extension: " +
-                std::string(file));
+            std::cout << "Unsupported file extension: " << file << std::endl;
         #endif /* DEBUG */
     }
 }
@@ -149,6 +146,7 @@ bool ShaderManager::linkProgram()
     for(auto it = fragmentShaders.begin(); it != fragmentShaders.end(); it++)
         glAttachShader(ID, (*it)->getID());
 
+    // all attached shaders are linked together into a shader program
     glLinkProgram(ID);
 
     GLint linkStatus;
@@ -160,13 +158,13 @@ bool ShaderManager::linkProgram()
             GLchar message[1024];
             glGetProgramInfoLog(ID, 1024, &logLength, message);
 
-            parentManager->sendToLog("Shader program linking failed:\n" +
-                std::string(message));
+            std::cout << "Shader program linking failed:\n" << message
+                << std::endl;
         #endif /* DEBUG */
         return false;
     }
     #ifdef DEBUG
-        parentManager->sendToLog("Shader program linked");
+        std::cout << "Shader program linked" << std::endl;
     #endif /* DEBUG */
     return true;
 }

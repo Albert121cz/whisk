@@ -1,8 +1,8 @@
 MAKEFLAGS += -j 5
 
-CXX := clang++
-CXXFLAGS := -Winvalid-pch -Wall -Wextra --std=c++17 --target=x86_64-w64-windows-gnu
-LDFLAGS := -Wl,-subsystem,windows --target=x86_64-w64-windows-gnu
+CXX := g++
+CXXFLAGS := -Winvalid-pch -Wall -Wextra -std=c++17
+LDFLAGS := -Wl,-subsystem,windows
 
 debug: CXXFLAGS += -g -DDEBUG
 debug: LDFLAGS  += -Wl,-subsystem,console
@@ -48,4 +48,5 @@ $(SHADERS): $(BUILD_DIR)/% : $(SHADERS_DIR)/%
 
 clean:
 	@echo rm $(OBJS) $(SHADERS)
-	@powershell -Command "echo $(OBJS) $(SHADERS) | Remove-Item"
+	@powershell -Command "try {echo $(OBJS) $(SHADERS) | Remove-Item -ErrorAction Stop} \
+	catch [System.Management.Automation.ItemNotFoundException] {echo 'Already removed'}"
