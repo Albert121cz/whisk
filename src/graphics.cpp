@@ -126,9 +126,9 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
     std::vector<std::string> line;
     glm::vec3 normal;
 
-    try
+    for (size_t lineIdx = startLine; lineIdx < data->size(); lineIdx++)
     {
-        for (size_t lineIdx = startLine; lineIdx < data->size(); lineIdx++)
+        try
         {
             line = data->at(lineIdx);
             keyword = line.front();
@@ -138,7 +138,8 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
             {
                 // v x-coord y-coord z-coord
                 if (line.size() != 4)
-                    throw std::invalid_argument("Incorrect number of params");
+                    throw std::invalid_argument(
+                        "Incorrect number of axes in space (expected 3)");
                 
                 for (size_t i = 1; i < line.size(); i++)
                     vertices->push_back(std::stof(line[i]));
@@ -148,7 +149,8 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
             {
                 // vt x-coord y-coord
                 if (line.size() != 3)
-                    throw std::invalid_argument("Incorrect number of params");
+                    throw std::invalid_argument(
+                        "Incorrect number of axes in texture (expected 2)");
                 
                 for (size_t i = 1; i < line.size(); i++)
                     texVertices->push_back(std::stof(line[i]));
@@ -158,7 +160,8 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
             {
                 // vn x-coord y-coord z-coord
                 if (line.size() != 4)
-                    throw std::invalid_argument("Incorrect number of params");
+                    throw std::invalid_argument(
+                        "Incorrect number of axes in normal vec. (expected 3)");
                 
                 for (size_t i = 1; i < line.size(); i++)
                     normals->push_back(std::stof(line[i]));
@@ -168,9 +171,10 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
             {
                 // f vertex1/texture1/normal1 vertex2/texture2/normal2...
                 if (line.size() < 4)
-                    throw std::invalid_argument("The params are missing");
+                    throw std::invalid_argument(
+                        "Incorrect number of vertices in face (expected >=3)");
                 
-                faceData = parseFace(vertices->size(), line);
+                faceData = parseFace(vertices->size()/3, line);
 
                 triangulate(&faceData, vertices, &normal);
                 
@@ -221,7 +225,8 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
             {
                 // l vertex1 vertex2
                 if (line.size() != 3)
-                    throw std::invalid_argument("The params are missing");
+                    throw std::invalid_argument(
+                        "Incorrect number of vertices in line (expected 2)");
                 
                 lineData = std::make_pair(
                     std::stoi(line[1]), std::stoi(line[2]));
@@ -230,9 +235,6 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
                 {
                     if (vertIdx < 0)
                         vertIdx = vertices->size() + vertIdx;
-                    else if (static_cast<size_t>(vertIdx) >= vertices->size())
-                        throw std::invalid_argument(
-                            "Invalid vertex index in face");
                     else
                         vertIdx--;
 
@@ -265,16 +267,33 @@ void GraphicsManager::newObject(std::string file, size_t startLine,
                 nameModified = true;
             }
         }
-    }
-    catch (std::invalid_argument& exception)
-    {
-        // invalid_argument can be non-number characters in stof
-        // or manually thrown incompatible number of parameters
-        #ifdef DEBUG
-            std::cout << "Object loading error: " << exception.what()
-                << std::endl;
-        #endif /* DEBUG */
-        return;
+        catch (std::invalid_argument& exception)
+        {
+            // invalid_argument can be non-number characters in stof
+            // or manually thrown incompatible number of parameters
+            #ifdef DEBUG
+                std::cout << "Object loading error: " << exception.what()
+                    << std::endl;
+            #endif /* DEBUG */
+            parentCanvas->showErrorMessage("Object loading error", "In file '" +
+                file + "' an error has occurred on line " + 
+                std::to_string(lineIdx + 1) + ":\n" + exception.what());
+            return;
+        }
+        catch (std::out_of_range& exception)
+        {
+            // this exception is triggered when line or faces includes
+            // non-existent vertex, texture coordinate or normal
+            #ifdef DEBUG
+                std::cout << "Object loading error: " << exception.what()
+                    << std::endl;
+            #endif /* DEBUG */
+            parentCanvas->showErrorMessage("Object loading error", "In file '" +
+                file + "' an error has occurred on line " + 
+                std::to_string(lineIdx + 1) + ":\n" +
+                "Incorrect index of vertex, texture or normal");
+            return;
+        }
     }
 
     // the name has to fit inside the wxCheckListBox
@@ -559,15 +578,16 @@ std::vector<std::tuple<int, int, int>> GraphicsManager::parseFace(
         while (std::getline(valueStream, tempValue, '/'))
         {
             if (tempValue.empty())
+            {
+                dataIdx++;
                 continue;
+            }
 
             saveValue = std::stoi(tempValue);
 
             // faces can be indexed negatively from the end, and are 1-based
             if (saveValue < 0)
                 saveValue = vertices + saveValue;
-            else if (static_cast<size_t>(saveValue) >= vertices)
-                throw std::invalid_argument("Invalid vertex index in face");
             else
                 saveValue--;
 

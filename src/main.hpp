@@ -282,6 +282,7 @@ public:
     bool extCheck(std::pair<bool, std::string> in);
     std::shared_ptr<GraphicsManager> getGraphicsManager();
     MouseInfo getMouseInfo();
+    void showErrorMessage(std::string title, std::string msg);
 
 private:
     MainFrame* parentFrame;

@@ -970,6 +970,11 @@ MouseInfo Canvas::getMouseInfo()
     return ret;
 }
 
+void Canvas::showErrorMessage(std::string title, std::string msg)
+{
+    wxMessageBox(msg, title, wxOK | wxICON_ERROR, this);
+}
+
 
 // https://stackoverflow.com/a/87333
 // https://stackoverflow.com/a/27739925

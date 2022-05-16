@@ -47,6 +47,4 @@ $(SHADERS): $(BUILD_DIR)/% : $(SHADERS_DIR)/%
 	@powershell -Command "Copy-Item $< -Destination $@"
 
 clean:
-	@echo rm $(OBJS) $(SHADERS)
-	@powershell -Command "try {echo $(OBJS) $(SHADERS) | Remove-Item -ErrorAction Stop} \
-	catch [System.Management.Automation.ItemNotFoundException] {echo 'Already removed'}"
+	@powershell -Command "echo $(OBJS) $(SHADERS) | rm -ErrorAction SilentlyContinue; echo 'rm $(OBJS) $(SHADERS)'"
